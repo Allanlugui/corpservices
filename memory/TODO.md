@@ -90,9 +90,15 @@
 
 ## FASE 08 — Arquivos [PROXIMA]
 - [ ] Storage bucket + RLS + explorador por OS + foto do checklist
-- [ ] 07 Estoque (CRUD, NF/XML tolerante, validade, metricas)
-- [ ] 08 Arquivos (explorador por OS) + 09 Offline-first real + 10 BotIA LLM (opcional)
-- [ ] 11 ERP real (quando houver docs) + 12 Notificacoes/Dashboard/Metas/PDF/Auditoria/Relatorios/Backup honesto
+- [ ] M-01 Revisão de XML antes de lançar: escolher arquivo → extrair itens → tela de revisão editável (corrige campos) → lançamento em lote de uma vez
+- [ ] M-02 Deduplicação no XML: cruzar referências (nome, barras, SKU, fornecedor) → perguntar "é o mesmo produto?" → se sim, só movimenta quantidade + histórico (data, ator, NF); se não, cria novo
+
+## FASES 09–12 [PLANEJADAS]
+- [ ] 09 Offline-first real (fila/outbox/sync — hoje só indicador)
+- [ ] 10 BotIA LLM (hoje só determinístico)
+- [ ] 11 ERP real (quando houver docs)
+- [ ] 12 Notificações + Metas + PDF + Auditoria hash-chain + Relatórios export + Backup honesto + dashboards por perfil + configurações
+- [ ] M-03 Auditoria/logs no front (Configurações): extrair logs do sistema p/ diagnóstico e correções
 
 ## Dependencias externas (BLOQUEADO POR DEPENDENCIA EXTERNA ate providas)
 - [ ] Supabase URL + keys · GitHub remote · Vercel projeto · SMTP/push · provedor LLM · API ERP

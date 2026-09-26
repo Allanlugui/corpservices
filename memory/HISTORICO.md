@@ -19,5 +19,9 @@
   - Migration v1 aplicada com senha do usuario (6 tabelas, RLS, 44 grants; REST anon 200 `[]`).
   - Admin `jallanluiz@gmail.com` criado (org CorpServices, role admin, login OK).
   - GitHub: repo privado `Allanlugui/corpservices` + push OK. Vercel BLOQUEADO sem token (P-03).
+- **2026-09-26 — melhorias registradas (sem implementar, por ordem do usuário):**
+  - M-01 revisão de XML antes de lançar + M-02 deduplicação com confirmação (Fase 08).
+  - M-03 visor de logs/auditoria em Configurações (Fase 12).
+- **2026-09-26 — varredura profunda:** git limpo, 7 migrations aplicadas, prod READY no último commit, zero TODO/FIXME no código, memória consistente.
 - **2026-09-26 — fix UI (tema quebrado em producao):**
   - Causa: bloco `body{...}` sem `@layer` no `globals.css` vencia as utilities do Tailwind v4 (fundo preto, texto invisivel). Fix: remover regras fora de camada; cores so via classes. Dashboard atualizado p/ Fase 03 (1/8 modulos, 1/5 integracoes). Producao validada (`/solicitar` renderiza, health CONFIGURADO).
