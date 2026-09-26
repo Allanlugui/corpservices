@@ -95,3 +95,11 @@ Feito (validado): Fases 00â€“07, correÃ§Ã£o UX, 2 revisÃµes. Pendente real:
 - [x] 05.5 E2E ciclo completo: OS #1 ticket#4 â†’ ENCERRADA, 8 eventos, pausa 7781ms, SLA congelado SIM
 - Falta: commit/push/prod desta etapa + compra vinculada a OS (aguarda Fase 06).
 - Producao: API /api/os 200 (n=1) + /os com UI nova no ar. FASE 05 CONCLUIDA.
+
+## FASE 08 — Arquivos (CONCLUIDA, 2026-09-26)
+- Migration v8 (bucket privado sem acesso direto + files) + APIs upload/lista signed-URL/remove.
+- Explorador /arquivos (OS + pastas + filtro) + aba Arquivos na OS + foto por item de checklist.
+- Enforcement: concluir OS exige foto em item done+requires_photo (422).
+- M-01 preview + M-02 dedupe (barcode/nome, fornecedor exibido) + confirm em lote.
+- RBAC: files:create p/ todos operacionais; delete só gestor/admin (D-20).
+- E2E: bloqueio, upload, signed, preview+unificação OK · prod xml-preview 200 + /arquivos no ar.
