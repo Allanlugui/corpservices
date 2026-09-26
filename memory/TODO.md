@@ -108,7 +108,7 @@
 - [x] Notificações in-app (migration, emissão, sino, central)
 - [x] M-03 Auditoria/logs em Configurações
 - [x] Ajustes2: auditoria viva por usuário, auditoria em Config, logs técnicos, saúde visual, fornecedores CRUD, backup export
-- [ ] PDF e documentos
+- [x] PDF por entidade (ticket/OS/compra) com histórico e paginação
 - [ ] Metas (UI)
 - [ ] Relatórios com export
 - [ ] Dashboards por perfil
