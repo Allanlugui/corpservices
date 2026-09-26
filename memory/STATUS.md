@@ -12,7 +12,9 @@
 - RBAC: `src/domain/rbac.ts` (7 papeis × 8 modulos, fail-closed) + 5 testes.
 - Migration v1 (`supabase/migrations/20260926000000_identity_v1.sql`): organizations, departments, app_roles, app_permissions, role_permissions, profiles + RLS default-deny + seeds. **APLICADA E VALIDADA 2026-09-26** (6 tabelas, RLS nas 6, 44 grants; REST anon `profiles` → 200 `[]`).
 - Gates: vitest 10/10 · tsc 0 · lint 0 · build OK · health Supabase=CONFIGURADO · `/login` 200.
-- Proximo: (a) criar usuario admin (aguardando e-mail), (b) GitHub remote, (c) Vercel, (d) AVAL → FASE 03.
+- Proximo: (a) trocar senha temporaria do admin, (b) token Vercel para deploy (P-03), (c) AVAL → FASE 03.
+- **GitHub:** repo privado `Allanlugui/corpservices`, branch master, push OK (4 commits).
+- **Vercel:** CLI 60.1.3 sem credenciais; `deploy --temporary` exige login/token. BLOQUEADO — aguardando token (Vercel → Account Settings → Tokens).
 - **Git:** commit local `cac928c` OK; `push` BLOQUEADO (sem remote — P-01); Vercel NAO CONFIGURADO (P-03).
 
 ## FASE 01 — Fundacao tecnica (CONCLUIDA local, 2026-09-26)

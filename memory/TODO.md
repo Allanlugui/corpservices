@@ -27,8 +27,10 @@
 - [x] 02.3 RBAC domain + testes (10/10)
 - [x] 02.4 Migration v1 escrita (RLS + seeds)
 - [x] 02.5 Migration v1 APLICADA via psql-direto (pg) e validada (P-07 resolvido)
-- [ ] 02.6 Criar usuario admin + profile vinculado (aguardando e-mail do admin)
-- [ ] 02.7 AVAL HUMANO → FASE 03
+- [x] 02.6 Usuario admin criado (org CorpServices + role admin, login testado OK)
+- [x] 02.7 GitHub: repo privado + push OK
+- [ ] 02.8 Vercel deploy (BLOQUEADO — aguardando token; P-03)
+- [ ] 02.9 AVAL HUMANO → FASE 03
 
 ## FASE 03 — Tickets e triagem BotIA [PLANEJADA]
 - [ ] 03.1 Portal publico + BotIA conversacional (DeterministicProvider) + anexos
