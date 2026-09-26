@@ -94,6 +94,10 @@
 - [x] M-01 revisao XML + M-02 dedupe
 - [x] E2E + prod
 
+## CORREÇÕES OBRIGATÓRIAS (antes do fim do projeto)
+- [ ] F-01 Arquivos somente-leitura: remover upload do /arquivos (vira explorador); fotos antes/durante/depois na execução da OS; documentos anexados pelo gestor ao designar (incl. colar Ctrl+V como imagem); tudo no histórico/auditoria
+- [ ] F-02 Nota fiscal vinculada: anexar NF (física/e-mail) à compra/OS/chamado; XML importado salvo automaticamente como arquivo e linkado às entidades
+
 ## FASES 09–12 [PLANEJADAS]
 - [ ] 09 Offline-first real (fila/outbox/sync — hoje só indicador)
 - [ ] 10 BotIA LLM (hoje só determinístico)

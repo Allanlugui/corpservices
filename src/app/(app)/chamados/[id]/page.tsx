@@ -14,6 +14,7 @@ import { LoadingState } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { Input, Textarea } from "@/components/ui/fields";
+import { enqueue, loadQueue, newKey, saveQueue } from "@/lib/outbox";
 
 interface Detail {
   ticket: {
@@ -176,11 +177,12 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
 
   async function act(body: Record<string, unknown>, label: string) {
     setBusy(true);
+    const key = newKey();
     try {
       const res = await fetch(`/api/chamados/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, client_key: key }),
       });
       const json = await res.json();
       if (!res.ok || json.error) {
@@ -190,7 +192,9 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
         load();
       }
     } catch {
-      toast("Falha de rede.", "error");
+      saveQueue(enqueue(loadQueue(), { key, type: "ticket.transition", payload: { id, ...body } }));
+      toast("Sem conexão: ação na fila para sincronizar.", "error");
+      load();
     } finally {
       setBusy(false);
       setConfirm(null);

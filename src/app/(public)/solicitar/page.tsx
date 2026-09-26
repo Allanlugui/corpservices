@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/fields";
+import { enqueue, loadQueue, newKey, saveQueue } from "@/lib/outbox";
 
 type Kind = "servico" | "compra";
 
@@ -41,6 +42,7 @@ export default function SolicitarPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<Created | null>(null);
+  const [queued, setQueued] = useState(false);
 
   const fieldSteps = kind === "servico" ? SERVICO_STEPS : COMPRA_STEPS;
   // step 0 = tipo, 1 = identificacao, 2..n+1 = campos, ultimo = revisao
@@ -66,11 +68,12 @@ export default function SolicitarPage() {
     if (!kind) return;
     setSending(true);
     setError(null);
+    const key = newKey();
     try {
       const res = await fetch("/api/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind, requester_name: name, requester_email: email, fields }),
+        body: JSON.stringify({ kind, requester_name: name, requester_email: email, fields, client_key: key }),
       });
       const json = await res.json();
       if (!res.ok || json.error) {
@@ -79,10 +82,27 @@ export default function SolicitarPage() {
       }
       setCreated(json.data as Created);
     } catch {
-      setError("Falha de rede. Tente novamente.");
+      // Offline: entra na fila com chave idempotente; sincroniza ao reconectar.
+      saveQueue(enqueue(loadQueue(), { key, type: "ticket.create", payload: { kind, requester_name: name, requester_email: email, fields } }));
+      setQueued(true);
     } finally {
       setSending(false);
     }
+  }
+
+  if (queued) {
+    return (
+      <section className="mx-auto max-w-xl">
+        <PageHeader title="Solicitação na fila" actions={<Badge tone="warn">OFFLINE · PENDENTE</Badge>} />
+        <Card>
+          <p className="text-sm text-slate-700">
+            Sem conexão no momento. Sua solicitação foi guardada neste aparelho e será enviada
+            automaticamente ao reconectar — sem duplicar (chave idempotente).
+          </p>
+          <p className="mt-2 text-xs text-slate-500">O protocolo aparece aqui após a sincronização. Acompanhe pelo cabeçalho (PENDENTES).</p>
+        </Card>
+      </section>
+    );
   }
 
   if (created) {

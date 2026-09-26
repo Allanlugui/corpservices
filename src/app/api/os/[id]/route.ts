@@ -9,14 +9,14 @@ import { resolveActors, withActorNames } from "@/lib/actors";
 const paramsSchema = z.object({ id: z.string().uuid() });
 
 const actionSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("assign"), assigned_to: z.string().uuid() }),
-  z.object({ action: z.literal("start") }),
-  z.object({ action: z.literal("pause"), reason: z.string().trim().min(2).max(120) }),
-  z.object({ action: z.literal("resume") }),
-  z.object({ action: z.literal("complete") }),
-  z.object({ action: z.literal("validate") }),
-  z.object({ action: z.literal("reopen") }),
-  z.object({ action: z.literal("close") }),
+  z.object({ action: z.literal("assign"), assigned_to: z.string().uuid(), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("start"), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("pause"), reason: z.string().trim().min(2).max(120), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("resume"), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("complete"), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("validate"), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("reopen"), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("close"), client_key: z.string().uuid().optional() }),
 ]);
 
 const ACTION_TO: Record<string, OsStatus> = {
@@ -105,6 +105,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const from = wo.status as OsStatus;
     const action = parsed.data.action;
+    // Replay idempotente: evento já aplicado retorna o estado atual sem duplicar.
+    const clientKey = (parsed.data as { client_key?: string }).client_key;
+    if (clientKey) {
+      const { data: seen } = await admin
+        .from("work_order_events")
+        .select("to_status")
+        .eq("work_order_id", id)
+        .eq("client_key", clientKey)
+        .maybeSingle();
+      if (seen) return ok({ id, to: seen.to_status, deduped: true });
+    }
     const to = transitionOs(from, ACTION_TO[action]);
     // OS filha aberta bloqueia conclusao/validacao/encerramento da pai.
     if ((action === "complete" || action === "validate" || action === "close")) {
@@ -209,6 +220,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       to_status: to,
       actor_profile_id: session.userId,
       detail,
+      client_key: clientKey ?? null,
     });
     return ok({ id, from, to, sla_remaining_ms: patch["sla_remaining_ms"] ?? wo.sla_remaining_ms });
   } catch (e) {

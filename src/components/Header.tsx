@@ -6,7 +6,7 @@ import { Bell, LogOut, Menu, User } from "lucide-react";
 import { Breadcrumb } from "./ui/breadcrumb";
 import { Dropdown } from "./ui/pagination";
 import { IconButton } from "./ui/button";
-import { useOnline } from "@/hooks/useOnline";
+import { useSync } from "@/hooks/useSync";
 import type { Me } from "@/hooks/useMe";
 
 const TITLES: Record<string, string> = {
@@ -24,16 +24,23 @@ const TITLES: Record<string, string> = {
   "/fornecedores": "Fornecedores",
 };
 
-function SyncBadge() {
-  const online = useOnline();
+function SyncBadge({ sync }: { sync: ReturnType<typeof useSync> }) {
+  const { online, pending, syncing, lastResult } = sync;
   return (
-    <span
-      role="status"
-      title={online ? "Conectado" : "Sem conexão — a fila offline chega na Fase 09"}
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${online ? "bg-emerald-100 text-emerald-900" : "bg-red-100 text-red-900"}`}
-    >
-      <span aria-hidden className={`h-2 w-2 rounded-full ${online ? "bg-emerald-600" : "bg-red-600"}`} />
-      {online ? "ONLINE" : "OFFLINE"}
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        role="status"
+        title={online ? "Conectado" : "Sem conexão — operações vão para a fila"}
+        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${online ? "bg-emerald-100 text-emerald-900" : "bg-red-100 text-red-900"}`}
+      >
+        <span aria-hidden className={`h-2 w-2 rounded-full ${online ? "bg-emerald-600" : "bg-red-600"}`} />
+        {syncing ? "SINCRONIZANDO" : online ? "ONLINE" : "OFFLINE"}
+      </span>
+      {pending > 0 ? (
+        <span role="status" title={lastResult ?? `${pending} operação(ões) na fila`} className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
+          {pending} PENDENTE{pending > 1 ? "S" : ""}
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -41,6 +48,7 @@ function SyncBadge() {
 export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const sync = useSync();
   const title = TITLES[pathname] ?? "CorpServices";
 
   async function logout() {
@@ -59,7 +67,16 @@ export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
           <Breadcrumb items={[{ label: "Início", href: "/" }, ...(pathname === "/" ? [] : [{ label: title }])]} />
         </div>
         <h1 className="flex-1 truncate font-bold sm:hidden">{title}</h1>
-        <SyncBadge />
+        <SyncBadge sync={sync} />
+        {sync.pending > 0 && !sync.syncing ? (
+          <button
+            type="button"
+            onClick={() => void sync.sync()}
+            className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-200"
+          >
+            Sincronizar
+          </button>
+        ) : null}
         <Link href="/notificacoes" aria-label="Notificações" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-200/70">
           <Bell size={18} />
         </Link>

@@ -11,9 +11,9 @@ const paramsSchema = z.object({ id: z.string().uuid() });
 // Acoes expostas: transicao de estado valida + conversao registrada.
 // A conversao cria o evento e o status CONVERTIDO; a OS/compra real nasce na Fase 05/06.
 const actionSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("advance"), to: z.enum(TICKET_STATUSES) }),
-  z.object({ action: z.literal("convert"), target: z.enum(["os", "compra"]) }),
-  z.object({ action: z.literal("assign"), assigned_to: z.string().uuid().nullable() }),
+  z.object({ action: z.literal("advance"), to: z.enum(TICKET_STATUSES), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("convert"), target: z.enum(["os", "compra"]), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("assign"), assigned_to: z.string().uuid().nullable(), client_key: z.string().uuid().optional() }),
 ]);
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -67,6 +67,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!parsed.success) return fail("VALIDATION", "Acao invalida.", 422);
 
     const admin = createAdminClient();
+    // Replay idempotente: evento já aplicado retorna o estado atual sem duplicar.
+    const clientKey = (parsed.data as { client_key?: string }).client_key;
+    if (clientKey) {
+      const { data: seen } = await admin
+        .from("ticket_events")
+        .select("to_status")
+        .eq("ticket_id", id)
+        .eq("client_key", clientKey)
+        .maybeSingle();
+      if (seen) return ok({ id, to: seen.to_status, deduped: true });
+    }
     const { data: ticket } = await admin
       .from("tickets")
       .select("id, status")
@@ -96,6 +107,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         to_status: to,
         actor_profile_id: session.userId,
         detail,
+        client_key: clientKey ?? null,
       });
       return ok({ id, from, to, assigned_to: parsed.data.assigned_to });
     } else {
@@ -114,6 +126,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       to_status: to,
       actor_profile_id: session.userId,
       detail,
+      client_key: clientKey ?? null,
     });
     return ok({ id, from, to });
   } catch (e) {

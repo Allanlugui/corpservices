@@ -16,6 +16,7 @@ import { ErrorState } from "@/components/ui/states";
 import { FileList, FileUploader, useFiles } from "@/components/files";
 import { useToast } from "@/components/ui/toast";
 import { formatRemaining } from "@/domain/sla";
+import { enqueue, loadQueue, newKey, saveQueue } from "@/lib/outbox";
 
 interface Wo {
   id: string;
@@ -219,11 +220,12 @@ function DetailInner({ id }: { id: string }) {
 
   async function act(body: Record<string, unknown>, label: string) {
     setBusy(true);
+    const key = newKey();
     try {
       const res = await fetch(`/api/os/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, client_key: key }),
       });
       const json = await res.json();
       if (!res.ok || json.error) toast(json.error?.message ?? "Ação recusada.", "error");
@@ -232,7 +234,8 @@ function DetailInner({ id }: { id: string }) {
         load();
       }
     } catch {
-      toast("Falha de rede.", "error");
+      saveQueue(enqueue(loadQueue(), { key, type: "os.transition", payload: { id, ...body } }));
+      toast("Sem conexão: ação na fila para sincronizar.", "error");
     } finally {
       setBusy(false);
       setConfirm(null);

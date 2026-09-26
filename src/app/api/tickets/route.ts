@@ -10,6 +10,7 @@ const ticketSchema = z.object({
   requester_name: z.string().trim().min(2).max(120),
   requester_email: z.string().trim().email().max(160),
   fields: z.record(z.string(), z.string().max(4000)),
+  client_key: z.string().uuid().optional(),
 });
 
 /** Rejeita tentativa de vincular profile pelo portal publico (espelha a policy RLS). */
@@ -47,6 +48,25 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const org_id = await resolveOrgId(admin);
 
+    // Idempotência offline: mesma chave retorna o protocolo existente, sem duplicar.
+    if (parsed.data.client_key) {
+      const { data: existing } = await admin
+        .from("tickets")
+        .select("id, number, tracking_token, ai_suggested_kind, ai_missing_fields")
+        .eq("client_key", parsed.data.client_key)
+        .maybeSingle();
+      if (existing) {
+        return ok({
+          number: existing.number,
+          tracking_token: existing.tracking_token,
+          tracking_url: `/solicitar/acompanhar?token=${existing.tracking_token}`,
+          suggested_kind: existing.ai_suggested_kind,
+          missing_fields: existing.ai_missing_fields,
+          deduped: true,
+        });
+      }
+    }
+
     // Insert via service_role: o anon nao tem SELECT (leitura publica so via RPC com token),
     // entao o `returning` do insert anonimo falharia. As restricoes da policy
     // `tickets_anon_insert` (kind valido, status NOVO, sem profile) estao espelhadas
@@ -68,6 +88,7 @@ export async function POST(request: Request) {
         ai_suggested_kind: triage.suggestedKind,
         ai_missing_fields: triage.missingFields,
         payload: fields,
+        client_key: parsed.data.client_key ?? null,
       })
       .select("id, number, tracking_token")
       .single();
@@ -103,6 +124,7 @@ export async function POST(request: Request) {
       from_status: null,
       to_status: "NOVO",
       detail: { channel: "portal", ai_suggested_kind: triage.suggestedKind },
+      client_key: parsed.data.client_key ?? null,
     });
 
     return ok(
