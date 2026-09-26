@@ -21,9 +21,14 @@
 - [x] 01.4 Gates verdes (5/5, tsc 0, lint 0, build OK, 9 rotas 200) + commit local
 - [ ] 01.5 AVAL HUMANO para encerrar Fase 01 e autorizar Fase 02
 
-## FASE 02 — Identidade, usuarios e permissoes [PLANEJADA]
-- [ ] 02.1 Papeis + permissoes (8 papeis) + RLS por modulo/acao/entidade/estado
-- [ ] 02.2 Testes de autorizacao backend (nao so esconder botao)
+## FASE 02 — Identidade, usuarios e permissoes [PARCIAL — falta apply da migration]
+- [x] 02.1 Segredos em `.env.local` + Auth GoTrue VALIDADA
+- [x] 02.2 Clients + middleware + login/logout (redirect 307 VALIDADO)
+- [x] 02.3 RBAC domain + testes (10/10)
+- [x] 02.4 Migration v1 escrita (RLS + seeds)
+- [ ] 02.5 Aplicar migration no Supabase (dashboard ou senha DB) — P-07
+- [ ] 02.6 Criar usuario admin + profile vinculado
+- [ ] 02.7 AVAL HUMANO → FASE 03
 
 ## FASE 03 — Tickets e triagem BotIA [PLANEJADA]
 - [ ] 03.1 Portal publico + BotIA conversacional (DeterministicProvider) + anexos

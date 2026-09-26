@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const LINKS = [
   { href: "/", label: "Início" },
@@ -16,6 +16,14 @@ const LINKS = [
 
 export function AppNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  if (pathname === "/login") return null;
+
+  async function logout() {
+    await fetch("/api/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
   return (
     <header className="bg-slate-900 text-white">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
@@ -43,6 +51,13 @@ export function AppNav() {
             })}
           </ul>
         </nav>
+        <button
+          type="button"
+          onClick={logout}
+          className="ml-auto rounded px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+        >
+          Sair
+        </button>
       </div>
     </header>
   );

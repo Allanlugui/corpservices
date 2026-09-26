@@ -6,7 +6,13 @@
 - **Entregue nesta sessao:** `ARCHITECTURE.md` (stack, modulos, dados, RBAC, estados, SLA, offline, BotIA, ERP, auditoria), `DECISOES.md` (D-01…D-12), `TODO.md` (backlog por fases), `PROBLEMAS.md`, `HISTORICO.md`.
 - **Validado:** leitura do cerebro global/local + Subconsciente; auditoria factual (Node v24.13.0, npm 11.6.2, `not a git repository`).
 - **Nao validado:** Serena (`get_current_config` timeout MCP -32001); todo o resto e PLANEJADO, nada IMPLEMENTADO.
-- **Proximo passo:** AVAL HUMANO para encerrar Fase 01 e autorizar FASE 02 (identidade/RBAC — exige Supabase).
+## FASE 02 — Identidade, usuarios e permissoes (PARCIAL, 2026-09-26)
+- Auth funcional: middleware sessao + `/login` + `/api/logout`; rota protegida redireciona (`/os` → 307 `/login?next=/os` VALIDADO).
+- Clients: `supabase-browser` (anon) + `supabase-server` (anon+cookies) + `supabase-admin` (service_role, server-only, fail-closed).
+- RBAC: `src/domain/rbac.ts` (7 papeis × 8 modulos, fail-closed) + 5 testes.
+- Migration v1 (`supabase/migrations/20260926000000_identity_v1.sql`): organizations, departments, app_roles, app_permissions, role_permissions, profiles + RLS default-deny + seeds. **NAO APLICADA** — sem senha DB/token; aplicar via Dashboard SQL Editor (P-07).
+- Gates: vitest 10/10 · tsc 0 · lint 0 · build OK · health Supabase=CONFIGURADO · `/login` 200.
+- Proximo: AVAL HUMANO + (a) aplicar migration, (b) criar usuario admin, (c) GitHub remote, (d) Vercel.
 - **Git:** commit local `cac928c` OK; `push` BLOQUEADO (sem remote — P-01); Vercel NAO CONFIGURADO (P-03).
 
 ## FASE 01 — Fundacao tecnica (CONCLUIDA local, 2026-09-26)
