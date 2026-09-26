@@ -14,7 +14,8 @@
 - Gates: vitest 10/10 · tsc 0 · lint 0 · build OK · health Supabase=CONFIGURADO · `/login` 200.
 - Proximo: (a) trocar senha temporaria do admin, (b) token Vercel para deploy (P-03), (c) AVAL → FASE 03.
 - **GitHub:** repo privado `Allanlugui/corpservices`, branch master, push OK (4 commits).
-- **Vercel:** CLI 60.1.3 sem credenciais; `deploy --temporary` exige login/token. BLOQUEADO — aguardando token (Vercel → Account Settings → Tokens).
+- **Vercel:** projeto `corpservices` vinculado (scope allans-projects); envs production OK; deploys CLI → BLOCKED (P-03, aguardando conexao Git no dashboard).
+- **Git:** identidade `Allanlugui <jallanluiz@gmail.com>`; 7 commits no ar.
 - **Git:** commit local `cac928c` OK; `push` BLOQUEADO (sem remote — P-01); Vercel NAO CONFIGURADO (P-03).
 
 ## FASE 01 — Fundacao tecnica (CONCLUIDA local, 2026-09-26)
