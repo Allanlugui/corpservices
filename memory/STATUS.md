@@ -44,3 +44,9 @@
 - Produção validada com sessão real (dashboard novo no ar).
 
 ## FASE 05 — Ordem de Serviço [EM ANDAMENTO]
+- [x] 05.1 Migration v3 aplicada (work_orders, pause_reasons + 8 seeds, pauses, checklists, materials, events)
+- [x] 05.2 Domain: estados + SLA deterministico + 25 testes verdes
+- [x] 05.3 APIs (criar de ticket CONVERTIDO, 8 transicoes, pausas com SLA, checklist, materiais)
+- [x] 05.4 UI /os (tabela + SLA) + /os/[id] (4 abas + timeline + pausas)
+- [x] 05.5 E2E ciclo completo: OS #1 ticket#4 → ENCERRADA, 8 eventos, pausa 7781ms, SLA congelado SIM
+- Falta: commit/push/prod desta etapa + compra vinculada a OS (aguarda Fase 06).

@@ -50,11 +50,13 @@
 - [x] UX.1–UX.6 (auditoria, AppShell, design system, migração, RBAC/responsivo, gates+prod)
 
 ## FASE 05 — Ordem de Servico [EM ANDAMENTO]
-- [ ] 05.1 Migration v3 (work_orders + pausas + checklist + materiais + eventos)
-- [ ] 05.2 Domain: estados OS + SLA deterministico + testes
-- [ ] 05.3 APIs (criar a partir de ticket, atribuir, pausar/retomar, concluir, validar, encerrar)
-- [ ] 05.4 UI /os + /os/[id] (abas, timeline, pausas)
-- [ ] 05.5 E2E + gates + producao
+- [x] 05.1 Migration v3 aplicada (6 tabelas + 8 motivos)
+- [x] 05.2 Domain: estados OS + SLA deterministico + testes (25/25)
+- [x] 05.3 APIs OS completas
+- [x] 05.4 UI /os + /os/[id]
+- [x] 05.5 E2E ciclo completo validado (SLA congelado SIM)
+- [ ] 05.6 Push + producao + memoria final
+- Nota: compra vinculada a OS (pausa por falta de componente) chega na FASE 06.
 
 ## FASES 06–12 [PLANEJADAS — detalhadas apos Fase 05]
 - [ ] 06 Compras (duas arvores) + cotacao/aprovacao/pagamento/recebimento
