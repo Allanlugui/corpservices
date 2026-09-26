@@ -34,14 +34,28 @@ export async function GET(request: Request) {
 
     if (view === "quotes" || view === "orders") {
       const table = view === "quotes" ? "purchase_quotes" : "purchase_orders";
-      const { data, error } = await admin
+      const purchaseNumber = url.searchParams.get("purchase_number");
+      const supplier = url.searchParams.get("supplier")?.trim().toLowerCase();
+      const chosen = url.searchParams.get("chosen");
+      const orderStatus = url.searchParams.get("order_status");
+      let q = admin
         .from(table)
         .select("*, purchase_requests!inner(number, status, org_id)")
         .eq("purchase_requests.org_id", session.orgId)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(100);
+      if (orderStatus && view === "orders") q = q.eq("status", orderStatus);
+      if (chosen !== null && chosen !== "" && view === "quotes") q = q.eq("chosen", chosen === "1");
+      if (supplier) q = q.ilike("supplier", `%${supplier}%`);
+      const { data, error } = await q;
       if (error) return fail("DB_QUERY", "Nao foi possivel listar.", 500);
-      return ok({ [view]: data });
+      let rows = data ?? [];
+      if (purchaseNumber) {
+        rows = rows.filter(
+          (r) => String((r.purchase_requests as unknown as { number: number }).number) === purchaseNumber,
+        );
+      }
+      return ok({ [view]: rows });
     }
 
     let query = admin
@@ -54,7 +68,29 @@ export async function GET(request: Request) {
     if (origin) query = query.eq("origin", origin.toUpperCase());
     const { data, error } = await query;
     if (error) return fail("DB_QUERY", "Nao foi possivel listar.", 500);
-    return ok({ purchases: data });
+    // Primeiro item + total de itens por solicitacao (coluna "Item" da tabela).
+    const ids = (data ?? []).map((r) => r.id);
+    const itemMap = new Map<string, { first: string; count: number }>();
+    if (ids.length > 0) {
+      const { data: items } = await admin
+        .from("purchase_request_items")
+        .select("request_id, item, quantity")
+        .in("request_id", ids)
+        .order("created_at");
+      for (const it of items ?? []) {
+        const key = it.request_id as string;
+        const cur = itemMap.get(key);
+        if (!cur) itemMap.set(key, { first: `${it.quantity}× ${it.item}`, count: 1 });
+        else itemMap.set(key, { first: cur.first, count: cur.count + 1 });
+      }
+    }
+    return ok({
+      purchases: (data ?? []).map((r) => ({
+        ...r,
+        first_item: itemMap.get(r.id)?.first ?? "—",
+        items_count: itemMap.get(r.id)?.count ?? 0,
+      })),
+    });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);
