@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@/components/ui/modal";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { LoadingState } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
+import { FileList, FileUploader, useFiles } from "@/components/files";
 import { useToast } from "@/components/ui/toast";
 import { formatRemaining } from "@/domain/sla";
 
@@ -138,6 +139,46 @@ function NewPurchaseFromOs({
           Criar compra vinculada
         </Button>
       </div>
+    </div>
+  );
+}
+
+function ChecklistRow({
+  item,
+  onToggle,
+}: {
+  item: { id: string; label: string; done: boolean; requires_photo: boolean };
+  onToggle: () => void;
+}) {
+  const { files, reload } = useFiles("checklist_item", item.id);
+  const [showPhoto, setShowPhoto] = useState(false);
+  return (
+    <div className="rounded-lg border border-slate-200 p-2">
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <Checkbox label={item.label} checked={item.done} onChange={onToggle} />
+        </div>
+        {item.requires_photo ? (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
+            foto {files.length > 0 ? `ok (${files.length})` : "obrigatória"}
+          </span>
+        ) : null}
+      </div>
+      {item.requires_photo ? (
+        <div className="mt-1">
+          <Button variant="ghost" size="sm" onClick={() => setShowPhoto((s) => !s)}>
+            {showPhoto ? "Ocultar foto" : "Anexar foto"}
+          </Button>
+          {showPhoto ? (
+            <div className="mt-2">
+              <FileUploader ownerType="checklist_item" ownerId={item.id} folder="foto_checklist" folders={["foto_checklist"]} accept="image/jpeg,image/png,image/webp" label="Foto do item" onUploaded={reload} />
+              <div className="mt-2">
+                <FileList files={files} onDelete={reload} />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -343,12 +384,7 @@ function DetailInner({ id }: { id: string }) {
                 <Card title="Checklist">
                   <div className="grid gap-2">
                     {checklist.map((c) => (
-                      <div key={c.id} className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <Checkbox label={c.label} checked={c.done} onChange={() => void toggleCheck(c)} />
-                        </div>
-                        {c.requires_photo ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900" title="Upload de foto chega na Fase 08">foto obrigatória</span> : null}
-                      </div>
+                      <ChecklistRow key={c.id} item={c} onToggle={() => void toggleCheck(c)} />
                     ))}
                     {checklist.length === 0 ? <p className="text-sm text-slate-500">Nenhum item. Adicione o primeiro passo.</p> : null}
                   </div>
@@ -434,6 +470,11 @@ function DetailInner({ id }: { id: string }) {
             ),
           },
           {
+            id: "arquivos",
+            label: "Arquivos",
+            content: <OsArquivosTab osId={id} />,
+          },
+          {
             id: "filhas",
             label: `OS filhas (${children.length})`,
             content: (
@@ -483,6 +524,30 @@ function DetailInner({ id }: { id: string }) {
         />
       ) : null}
     </section>
+  );
+}
+
+function OsArquivosTab({ osId }: { osId: string }) {
+  const { files, loading, reload } = useFiles("work_order", osId);
+  const groups: Record<string, typeof files> = { antes: [], durante: [], depois: [], documentos: [] };
+  for (const f of files) {
+    (groups[f.folder] ??= []).push(f);
+  }
+  return (
+    <div className="grid gap-4">
+      <Card title="Enviar (Antes / Durante / Depois / Documentos)">
+        <FileUploader ownerType="work_order" ownerId={osId} folders={["antes", "durante", "depois", "documentos"]} onUploaded={reload} />
+      </Card>
+      {loading ? (
+        <LoadingState label="Carregando arquivos…" />
+      ) : (
+        (["antes", "durante", "depois", "documentos"] as const).map((folder) => (
+          <Card key={folder} title={folder[0].toUpperCase() + folder.slice(1)}>
+            <FileList files={groups[folder] ?? []} onDelete={reload} />
+          </Card>
+        ))
+      )}
+    </div>
   );
 }
 

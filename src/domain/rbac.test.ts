@@ -23,6 +23,12 @@ describe("RBAC", () => {
     expect(can("auditor", "purchases", "approve")).toBe(false);
   });
 
+  it("tecnico pode enviar foto mas nao excluir; gestor exclui", () => {
+    expect(can("tecnico", "files", "create")).toBe(true);
+    expect(can("tecnico", "files", "delete")).toBe(false);
+    expect(can("gestor", "files", "delete")).toBe(true);
+  });
+
   it("parseRole rejeita valores desconhecidos (fail-closed)", () => {
     expect(parseRole("superadmin")).toBeNull();
     expect(parseRole(null)).toBeNull();

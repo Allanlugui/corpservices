@@ -177,6 +177,26 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     if (action === "complete") {
+      // Foto obrigatória do checklist (Fase 08): item concluído com requires_photo precisa de foto vinculada.
+      const { data: pending } = await admin
+        .from("work_order_checklists")
+        .select("id")
+        .eq("work_order_id", id)
+        .eq("done", true)
+        .eq("requires_photo", true);
+      if ((pending ?? []).length > 0) {
+        const ids = (pending ?? []).map((p) => p.id);
+        const { data: byOwner } = await admin
+          .from("files")
+          .select("owner_id")
+          .eq("org_id", session.orgId)
+          .eq("owner_type", "checklist_item")
+          .in("owner_id", ids);
+        const covered = new Set((byOwner ?? []).map((f) => f.owner_id));
+        if (ids.some((pid) => !covered.has(pid))) {
+          return fail("PHOTO_REQUIRED", "Itens do checklist exigem foto antes de concluir.", 422);
+        }
+      }
       patch["finished_at"] = new Date(now).toISOString();
     }
 

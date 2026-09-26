@@ -1,0 +1,88 @@
+import { z } from "zod";
+import { createAdminClient } from "@/lib/supabase-admin";
+import { fail, ok } from "@/lib/api";
+import { AuthError, requireProfile } from "@/lib/require-auth";
+import { can } from "@/domain/rbac";
+import { incompleteFields } from "@/domain/inventory";
+
+/**
+ * M-01/M-02: lançamento em lote APÓS revisão. Cada item decide:
+ * - product_id existente => só movimenta (sem duplicar) + histórico completo;
+ * - sem product_id => cria produto (tolerante) + movimenta.
+ */
+const itemSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  unit: z.string().trim().min(1).max(20).default("un"),
+  quantity: z.number().min(0).max(1000000),
+  cost_cents: z.number().int().min(0).default(0),
+  barcode: z.string().trim().max(60).nullable().default(null),
+  category: z.string().trim().max(80).optional(),
+  supplier_id: z.string().uuid().nullable().default(null),
+  product_id: z.string().uuid().nullable().default(null),
+  issuer: z.string().trim().max(160).default("NF-e"),
+});
+
+export async function POST(request: Request) {
+  try {
+    const session = await requireProfile();
+    if (!can(session.role, "inventory", "update")) {
+      return fail("FORBIDDEN", "Sem permissao.", 403);
+    }
+    const parsed = z.object({ items: z.array(itemSchema).min(1).max(200) }).safeParse(await request.json().catch(() => null));
+    if (!parsed.success) return fail("VALIDATION", "Itens invalidos.", 422);
+    const admin = createAdminClient();
+    const result: { name: string; action: "movimentado" | "criado"; quantity: number; cadastro_incompleto: boolean }[] = [];
+    for (const item of parsed.data.items) {
+      if (item.product_id) {
+        // Mesmo produto confirmado: só movimenta + histórico rastreável.
+        const { data: product } = await admin.from("products").select("id, quantity, name").eq("id", item.product_id).eq("org_id", session.orgId).single();
+        if (!product) return fail("NOT_FOUND", `Produto ${item.name} nao encontrado.`, 404);
+        if (item.quantity > 0) {
+          await admin.from("inventory_movements").insert({
+            org_id: session.orgId,
+            product_id: product.id,
+            kind: "entrada",
+            quantity: item.quantity,
+            reason: `NF-e ${item.issuer} (unificado a cadastro existente)`,
+            actor_profile_id: session.userId,
+          });
+          await admin.from("products").update({ quantity: Number(product.quantity) + item.quantity }).eq("id", product.id);
+        }
+        result.push({ name: product.name as string, action: "movimentado", quantity: item.quantity, cadastro_incompleto: false });
+      } else {
+        const missing = incompleteFields({ name: item.name, unit: item.unit, cost: item.cost_cents || null });
+        const { data: product, error } = await admin
+          .from("products")
+          .insert({
+            org_id: session.orgId,
+            name: item.name,
+            unit: item.unit,
+            cost_cents: item.cost_cents,
+            barcode: item.barcode,
+            supplier_id: item.supplier_id,
+            quantity: item.quantity,
+            notes: `Entrada via NF-e (${item.issuer})`,
+            cadastro_incompleto: missing.length > 0,
+          })
+          .select("id")
+          .single();
+        if (error || !product) return fail("DB_INSERT", `Falha em ${item.name}.`, 500);
+        if (item.quantity > 0) {
+          await admin.from("inventory_movements").insert({
+            org_id: session.orgId,
+            product_id: product.id,
+            kind: "entrada",
+            quantity: item.quantity,
+            reason: `NF-e ${item.issuer}`,
+            actor_profile_id: session.userId,
+          });
+        }
+        result.push({ name: item.name, action: "criado", quantity: item.quantity, cadastro_incompleto: missing.length > 0 });
+      }
+    }
+    return ok({ items: result }, 201);
+  } catch (e) {
+    if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
+    return fail("INTERNAL", "Erro interno.", 500);
+  }
+}
