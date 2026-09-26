@@ -1,0 +1,102 @@
+import { z } from "zod";
+import { createAdminClient } from "@/lib/supabase-admin";
+import { fail, ok } from "@/lib/api";
+import { AuthError, requireProfile } from "@/lib/require-auth";
+import { can } from "@/domain/rbac";
+
+const createSchema = z.object({
+  title: z.string().trim().min(3).max(160),
+  description: z.string().trim().max(4000).default(""),
+  priority: z.enum(["baixa", "media", "alta", "critica"]).default("media"),
+  location: z.string().trim().max(200).optional(),
+  ticket_id: z.string().uuid().optional(),
+  assigned_to: z.string().uuid().optional(),
+  sla_days: z.number().min(1).max(365).default(10),
+});
+
+export async function GET(request: Request) {
+  try {
+    const session = await requireProfile();
+    if (!can(session.role, "work_orders", "read")) {
+      return fail("FORBIDDEN", "Sem permissao.", 403);
+    }
+    const url = new URL(request.url);
+    const status = url.searchParams.get("status");
+    const mine = url.searchParams.get("mine") === "1";
+
+    const admin = createAdminClient();
+    let query = admin
+      .from("work_orders")
+      .select("id, number, title, status, priority, assigned_to, sla_remaining_ms, created_at")
+      .eq("org_id", session.orgId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (status) query = query.eq("status", status);
+    // Tecnico ve as proprias; gestor/admin podem filtrar.
+    if (session.role === "tecnico" || mine) query = query.eq("assigned_to", session.userId);
+    const { data, error } = await query;
+    if (error) return fail("DB_QUERY", "Nao foi possivel listar.", 500);
+    return ok({ work_orders: data });
+  } catch (e) {
+    if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
+    return fail("INTERNAL", "Erro interno.", 500);
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await requireProfile();
+    // Criar OS e gerir; tecnico executa o que lhe e atribuido.
+    if (!can(session.role, "work_orders", "update")) {
+      return fail("FORBIDDEN", "Sem permissao para criar OS.", 403);
+    }
+    const body = await request.json().catch(() => null);
+    const parsed = createSchema.safeParse(body);
+    if (!parsed.success) return fail("VALIDATION", "Campos invalidos.", 422, parsed.error.flatten().fieldErrors);
+
+    const admin = createAdminClient();
+    if (parsed.data.ticket_id) {
+      const { data: ticket } = await admin
+        .from("tickets")
+        .select("id, status")
+        .eq("id", parsed.data.ticket_id)
+        .eq("org_id", session.orgId)
+        .single();
+      if (!ticket) return fail("NOT_FOUND", "Ticket nao encontrado.", 404);
+      if (ticket.status !== "CONVERTIDO") {
+        return fail("INVALID_TICKET", "OS nasce de ticket CONVERTIDO.", 422);
+      }
+    }
+
+    const slaTotal = Math.round(parsed.data.sla_days * 86_400_000);
+    const { data: wo, error } = await admin
+      .from("work_orders")
+      .insert({
+        org_id: session.orgId,
+        ticket_id: parsed.data.ticket_id ?? null,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        priority: parsed.data.priority,
+        location: parsed.data.location ?? null,
+        assigned_to: parsed.data.assigned_to ?? null,
+        created_by: session.userId,
+        sla_total_ms: slaTotal,
+        sla_remaining_ms: slaTotal,
+      })
+      .select("id, number")
+      .single();
+    if (error || !wo) return fail("DB_INSERT", "Nao foi possivel criar a OS.", 500);
+    await admin.from("work_order_events").insert({
+      work_order_id: wo.id,
+      event: "CRIADA",
+      from_status: null,
+      to_status: "ABERTA",
+      actor_profile_id: session.userId,
+      detail: { ticket_id: parsed.data.ticket_id ?? null },
+    });
+    return ok({ id: wo.id, number: wo.number }, 201);
+  } catch (e) {
+    if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
+    return fail("INTERNAL", "Erro interno.", 500);
+  }
+}

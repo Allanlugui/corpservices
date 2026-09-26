@@ -1,0 +1,182 @@
+import { z } from "zod";
+import { createAdminClient } from "@/lib/supabase-admin";
+import { fail, ok } from "@/lib/api";
+import { AuthError, requireProfile } from "@/lib/require-auth";
+import { can } from "@/domain/rbac";
+import { transitionOs, type OsStatus } from "@/domain/os-states";
+
+const paramsSchema = z.object({ id: z.string().uuid() });
+
+const actionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("assign"), assigned_to: z.string().uuid() }),
+  z.object({ action: z.literal("start") }),
+  z.object({ action: z.literal("pause"), reason: z.string().trim().min(2).max(120) }),
+  z.object({ action: z.literal("resume") }),
+  z.object({ action: z.literal("complete") }),
+  z.object({ action: z.literal("validate") }),
+  z.object({ action: z.literal("reopen") }),
+  z.object({ action: z.literal("close") }),
+]);
+
+const ACTION_TO: Record<string, OsStatus> = {
+  assign: "ATRIBUIDA",
+  start: "EM_EXECUCAO",
+  pause: "PAUSADA",
+  resume: "EM_EXECUCAO",
+  complete: "CONCLUIDA",
+  validate: "VALIDACAO",
+  reopen: "EM_EXECUCAO",
+  close: "ENCERRADA",
+};
+
+const ACTION_EVENT: Record<string, string> = {
+  assign: "ATRIBUIDA",
+  start: "INICIADA",
+  pause: "PAUSADA",
+  resume: "RETOMADA",
+  complete: "CONCLUIDA",
+  validate: "VALIDACAO",
+  reopen: "REABERTA",
+  close: "ENCERRADA",
+};
+
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await requireProfile();
+    if (!can(session.role, "work_orders", "read")) {
+      return fail("FORBIDDEN", "Sem permissao.", 403);
+    }
+    const { id } = paramsSchema.parse(await params);
+    const admin = createAdminClient();
+    const { data: wo, error } = await admin
+      .from("work_orders")
+      .select("*")
+      .eq("id", id)
+      .eq("org_id", session.orgId)
+      .single();
+    if (error || !wo) return fail("NOT_FOUND", "OS nao encontrada.", 404);
+    if (session.role === "tecnico" && wo.assigned_to !== session.userId) {
+      return fail("FORBIDDEN", "OS atribuida a outro tecnico.", 403);
+    }
+    const [{ data: pauses }, { data: checklist }, { data: materials }, { data: events }] =
+      await Promise.all([
+        admin.from("work_order_pauses").select("*").eq("work_order_id", id).order("paused_at", { ascending: true }),
+        admin.from("work_order_checklists").select("*").eq("work_order_id", id).order("position"),
+        admin.from("work_order_materials").select("*").eq("work_order_id", id).order("consumed_at"),
+        admin.from("work_order_events").select("*").eq("work_order_id", id).order("created_at"),
+      ]);
+    return ok({ work_order: wo, pauses: pauses ?? [], checklist: checklist ?? [], materials: materials ?? [], events: events ?? [] });
+  } catch (e) {
+    if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
+    return fail("INTERNAL", "Erro interno.", 500);
+  }
+}
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await requireProfile();
+    if (!can(session.role, "work_orders", "update")) {
+      return fail("FORBIDDEN", "Sem permissao para movimentar OS.", 403);
+    }
+    const { id } = paramsSchema.parse(await params);
+    const body = await request.json().catch(() => null);
+    const parsed = actionSchema.safeParse(body);
+    if (!parsed.success) return fail("VALIDATION", "Acao invalida.", 422);
+
+    const admin = createAdminClient();
+    const { data: wo } = await admin
+      .from("work_orders")
+      .select("id, status, assigned_to, sla_remaining_ms, started_at, finished_at")
+      .eq("id", id)
+      .eq("org_id", session.orgId)
+      .single();
+    if (!wo) return fail("NOT_FOUND", "OS nao encontrada.", 404);
+    if (session.role === "tecnico" && wo.assigned_to !== session.userId) {
+      return fail("FORBIDDEN", "OS atribuida a outro tecnico.", 403);
+    }
+
+    const from = wo.status as OsStatus;
+    const action = parsed.data.action;
+    const to = transitionOs(from, ACTION_TO[action]);
+    const now = Date.now();
+    const detail: Record<string, unknown> = { actor: session.email };
+    const patch: Record<string, unknown> = { status: to, updated_at: new Date(now).toISOString() };
+
+    if (action === "assign" && parsed.data.action === "assign") {
+      patch["assigned_to"] = parsed.data.assigned_to;
+      detail["assigned_to"] = parsed.data.assigned_to;
+    }
+    if (action === "start" && !wo.started_at) patch["started_at"] = new Date(now).toISOString();
+
+    if (action === "pause" && parsed.data.action === "pause") {
+      // Congela o SLA: desconta o ativo desde o ultimo inicio e grava antes/depois.
+      const { data: lastPause } = await admin
+        .from("work_order_pauses")
+        .select("resumed_at")
+        .eq("work_order_id", id)
+        .order("paused_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const activeStart = lastPause?.resumed_at
+        ? Date.parse(lastPause.resumed_at as string)
+        : wo.started_at
+          ? Date.parse(wo.started_at as string)
+          : now;
+      const remaining = Math.max(0, (wo.sla_remaining_ms as number) - Math.max(0, now - activeStart));
+      patch["sla_remaining_ms"] = remaining;
+      const { error: pauseError } = await admin.from("work_order_pauses").insert({
+        work_order_id: id,
+        reason: parsed.data.reason,
+        paused_at: new Date(now).toISOString(),
+        sla_before_ms: wo.sla_remaining_ms,
+        sla_after_ms: remaining,
+        paused_by: session.userId,
+      });
+      if (pauseError) return fail("DB_UPDATE", "Nao foi possivel pausar.", 500);
+      detail["reason"] = parsed.data.reason;
+      detail["sla_before_ms"] = wo.sla_remaining_ms;
+      detail["sla_after_ms"] = remaining;
+    }
+
+    if (action === "resume") {
+      const { data: openPause } = await admin
+        .from("work_order_pauses")
+        .select("id, paused_at, sla_after_ms")
+        .eq("work_order_id", id)
+        .is("resumed_at", null)
+        .order("paused_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!openPause) return fail("INVALID_STATE", "Nenhuma pausa aberta.", 422);
+      const duration = now - Date.parse(openPause.paused_at as string);
+      await admin
+        .from("work_order_pauses")
+        .update({ resumed_at: new Date(now).toISOString(), duration_ms: duration, resumed_by: session.userId })
+        .eq("id", openPause.id);
+      detail["duration_ms"] = duration;
+      detail["sla_remaining_ms"] = wo.sla_remaining_ms;
+    }
+
+    if (action === "complete") {
+      patch["finished_at"] = new Date(now).toISOString();
+    }
+
+    const { error: updateError } = await admin.from("work_orders").update(patch).eq("id", id);
+    if (updateError) return fail("DB_UPDATE", "Nao foi possivel atualizar.", 500);
+    await admin.from("work_order_events").insert({
+      work_order_id: id,
+      event: ACTION_EVENT[action],
+      from_status: from,
+      to_status: to,
+      actor_profile_id: session.userId,
+      detail,
+    });
+    return ok({ id, from, to, sla_remaining_ms: patch["sla_remaining_ms"] ?? wo.sla_remaining_ms });
+  } catch (e) {
+    if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
+    if (e instanceof Error && e.message.startsWith("Transicao invalida")) {
+      return fail("INVALID_TRANSITION", e.message, 422);
+    }
+    return fail("INTERNAL", "Erro interno.", 500);
+  }
+}
