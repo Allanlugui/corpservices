@@ -66,6 +66,12 @@
 - Reversao: baixa.
 
 ## D-12 — PDF server-side, backup via provedor (2026-09-26, Fase 00)
+
+## D-13 — Next.js 16 via template oficial (2026-09-26, Fase 01)
+- Contexto: `create-next-app@latest` entrega Next 16.3.6 + Tailwind v4 (D-01 previa v15).
+- Escolha: aceitar a versao do template; dois ajustes manuais (`LayoutProps` removido → `ReactNode` explicito; `Badge` children `ReactNode`).
+- Motivo: acompanhar o template reduz divergencia futura; nada do plano depende de v15 especifica.
+- Reversao: baixa.
 - Contexto: Vercel sem filesystem persistente; "backup completo" falso e proibido.
 - Escolha: PDFs por stream/download; backup = mecanismos oficiais Supabase; app so exporta CSV/PDF.
 - Reversao: baixa.

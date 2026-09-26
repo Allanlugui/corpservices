@@ -14,11 +14,12 @@
 - [ ] 00.8 Commit local (sem remote — push pendente)
 - [ ] 00.9 AVAL HUMANO para encerrar Fase 00 e autorizar Fase 01
 
-## FASE 01 — Fundacao tecnica [PLANEJADA]
-- [ ] 01.1 Scaffold Next.js 15 + TS strict + Tailwind + ESLint + vitest
-- [ ] 01.2 PWA (manifest + SW so-estaticos) + layout + navegacao + design system
-- [ ] 01.3 Supabase: projeto, migrations v1 (identity), Auth, RLS — BLOQUEADO sem credenciais
-- [ ] 01.4 GitHub remote + Vercel deploy + validacao producao
+## FASE 01 — Fundacao tecnica [CONCLUIDA local]
+- [x] 01.1 Scaffold Next.js + TS strict + Tailwind + ESLint + vitest
+- [x] 01.2 PWA (manifest + SW ciclo-de-vida) + layout + navegacao + design system + health + dashboard factual
+- [x] 01.3 Supabase estrutura plugavel fail-closed (conexao real BLOQUEADA sem credenciais — P-02)
+- [x] 01.4 Gates verdes (5/5, tsc 0, lint 0, build OK, 9 rotas 200) + commit local
+- [ ] 01.5 AVAL HUMANO para encerrar Fase 01 e autorizar Fase 02
 
 ## FASE 02 — Identidade, usuarios e permissoes [PLANEJADA]
 - [ ] 02.1 Papeis + permissoes (8 papeis) + RLS por modulo/acao/entidade/estado
