@@ -95,8 +95,8 @@
 - [x] E2E + prod
 
 ## CORREÇÕES OBRIGATÓRIAS (antes do fim do projeto)
-- [ ] F-01 Arquivos somente-leitura: remover upload do /arquivos (vira explorador); fotos antes/durante/depois na execução da OS; documentos anexados pelo gestor ao designar (incl. colar Ctrl+V como imagem); tudo no histórico/auditoria
-- [ ] F-02 Nota fiscal vinculada: anexar NF (física/e-mail) à compra/OS/chamado; XML importado salvo automaticamente como arquivo e linkado às entidades
+- [x] F-01 Arquivos somente-leitura: upload na OS/compra/produto; paste Ctrl+V; docs na designação
+- [x] F-02 NF vinculada: aba NF na compra + XML auto-salvo + NFs transversais nos Arquivos
 
 ## FASES 09–12 [PLANEJADAS]
 ## FASE 09 — Offline-first v1 [CONCLUIDA 2026-09-26]
