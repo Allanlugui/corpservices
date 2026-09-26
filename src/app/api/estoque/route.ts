@@ -4,6 +4,7 @@ import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 import { incompleteFields } from "@/domain/inventory";
+import { pageParams } from "@/lib/pagination";
 
 const productSchema = z.object({
   name: z.string().trim().min(1).max(160),
@@ -43,14 +44,18 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const q = url.searchParams.get("q")?.trim().toLowerCase();
     const alert = url.searchParams.get("alert");
+    const { page, pageSize, from, to } = pageParams({
+      page: url.searchParams.get("page"),
+      page_size: url.searchParams.get("page_size") ?? "100",
+    });
     const admin = createAdminClient();
-    const { data, error } = await admin
+    const { data, error, count } = await admin
       .from("products")
-      .select("id, name, unit, location, stock_min, stock_max, quantity, cost_cents, sku, cadastro_incompleto, active, category_id")
+      .select("id, name, unit, location, stock_min, stock_max, quantity, cost_cents, sku, cadastro_incompleto, active, category_id", { count: "exact" })
       .eq("org_id", session.orgId)
       .eq("active", true)
       .order("name")
-      .limit(100);
+      .range(from, to);
     if (error) return fail("DB_QUERY", "Nao foi possivel listar.", 500);
     let rows = data ?? [];
     if (q) rows = rows.filter((p) => (p.name as string).toLowerCase().includes(q));
@@ -58,7 +63,8 @@ export async function GET(request: Request) {
     if (alert === "baixo") rows = rows.filter((p) => Number(p.stock_min) > 0 && Number(p.quantity) < Number(p.stock_min) && Number(p.quantity) > 0);
     if (alert === "zerado") rows = rows.filter((p) => Number(p.quantity) <= 0);
     if (alert === "excesso") rows = rows.filter((p) => Number(p.stock_max) > 0 && Number(p.quantity) > Number(p.stock_max));
-    return ok({ products: rows });
+    // Nota: filtros q/alert aplicam-se à janela carregada (page_size padrão 100); total = produtos da org.
+    return ok({ products: rows, page, page_size: pageSize, total: count ?? rows.length });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
+import { pageParams } from "@/lib/pagination";
 
 const itemSchema = z.object({
   item: z.string().trim().min(1).max(160),
@@ -29,7 +30,12 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const status = url.searchParams.get("status");
     const origin = url.searchParams.get("origin");
+    const search = url.searchParams.get("search")?.trim();
     const view = url.searchParams.get("view") ?? "requests";
+    const { page, pageSize, from, to } = pageParams({
+      page: url.searchParams.get("page"),
+      page_size: url.searchParams.get("page_size"),
+    });
     const admin = createAdminClient();
 
     if (view === "quotes" || view === "orders") {
@@ -60,13 +66,14 @@ export async function GET(request: Request) {
 
     let query = admin
       .from("purchase_requests")
-      .select("id, number, origin, status, priority, created_at")
+      .select("id, number, origin, status, priority, created_at", { count: "exact" })
       .eq("org_id", session.orgId)
-      .order("created_at", { ascending: false })
-      .limit(50);
+      .order("created_at", { ascending: false });
     if (status) query = query.eq("status", status);
     if (origin) query = query.eq("origin", origin.toUpperCase());
-    const { data, error } = await query;
+    if (search && /^\d+$/.test(search)) query = query.eq("number", Number(search));
+    query = query.range(from, to);
+    const { data, error, count } = await query;
     if (error) return fail("DB_QUERY", "Nao foi possivel listar.", 500);
     // Primeiro item + total de itens por solicitacao (coluna "Item" da tabela).
     const ids = (data ?? []).map((r) => r.id);
@@ -90,6 +97,9 @@ export async function GET(request: Request) {
         first_item: itemMap.get(r.id)?.first ?? "—",
         items_count: itemMap.get(r.id)?.count ?? 0,
       })),
+      page,
+      page_size: pageSize,
+      total: count ?? (data ?? []).length,
     });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);

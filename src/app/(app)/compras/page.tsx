@@ -59,16 +59,31 @@ function ComprasInner({ initialView }: { initialView: View }) {
   const [status, setStatus] = useState("");
   const [origin, setOrigin] = useState("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [quoteNumber, setQuoteNumber] = useState("");
   const [quoteSupplier, setQuoteSupplier] = useState("");
   const [quoteChosen, setQuoteChosen] = useState("");
   const [orderStatus, setOrderStatus] = useState("");
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams({ view });
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    const params = new URLSearchParams({ view, page: String(page), page_size: String(PAGE_SIZE) });
+    if (view === "requests") {
+      if (status) params.set("status", status);
+      if (origin) params.set("origin", origin);
+      if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+    }
     if (view === "quotes") {
       if (quoteNumber.trim()) params.set("purchase_number", quoteNumber.trim());
       if (quoteSupplier.trim()) params.set("supplier", quoteSupplier.trim());
@@ -79,24 +94,18 @@ function ComprasInner({ initialView }: { initialView: View }) {
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok || json.error) setError(json.error?.message ?? "Falha ao carregar.");
-        else if (view === "requests") setRows(json.data.purchases as Purchase[]);
+        else if (view === "requests") {
+          setRows(json.data.purchases as Purchase[]);
+          setTotal(json.data.total as number);
+        }
         else if (view === "quotes") setQuotes(json.data.quotes as QuoteRow[]);
         else setOrders(json.data.orders as OrderRow[]);
       })
       .catch(() => setError("Falha de rede."))
       .finally(() => setLoading(false));
-  }, [view, quoteNumber, quoteSupplier, quoteChosen, orderStatus]);
+  }, [view, quoteNumber, quoteSupplier, quoteChosen, orderStatus, status, origin, debouncedSearch, page]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return rows.filter(
-      (t) =>
-        (!status || t.status === status) &&
-        (!origin || t.origin === origin) &&
-        (!q || String(t.number).includes(q)),
-    );
-  }, [rows, status, origin, search]);
-  const paged = useMemo(() => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtered, page]);
+  const paged = rows;
 
   function switchView(v: View) {
     setView(v);
@@ -249,7 +258,7 @@ function ComprasInner({ initialView }: { initialView: View }) {
             emptyTitle="Nenhuma compra"
             emptyDescription="Compras nascem de chamados convertidos ou de OS pausadas."
           />
-          <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onPage={setPage} />
+          <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
         </>
       )}
     </section>

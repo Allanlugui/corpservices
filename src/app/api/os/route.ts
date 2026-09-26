@@ -4,6 +4,7 @@ import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 import { getSetting } from "@/app/api/configuracoes/route";
+import { pageParams } from "@/lib/pagination";
 
 const createSchema = z.object({
   title: z.string().trim().min(3).max(160),
@@ -25,20 +26,29 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const status = url.searchParams.get("status");
     const mine = url.searchParams.get("mine") === "1";
+    const search = url.searchParams.get("search")?.trim();
+    const { page, pageSize, from, to } = pageParams({
+      page: url.searchParams.get("page"),
+      page_size: url.searchParams.get("page_size"),
+    });
 
     const admin = createAdminClient();
     let query = admin
       .from("work_orders")
-      .select("id, number, title, status, priority, assigned_to, sla_remaining_ms, created_at")
+      .select("id, number, title, status, priority, assigned_to, sla_remaining_ms, created_at", { count: "exact" })
       .eq("org_id", session.orgId)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .range(from, to);
     if (status) query = query.eq("status", status);
     // Tecnico ve as proprias; gestor/admin podem filtrar.
     if (session.role === "tecnico" || mine) query = query.eq("assigned_to", session.userId);
-    const { data, error } = await query;
+    if (search) {
+      if (/^\d+$/.test(search)) query = query.eq("number", Number(search));
+      else query = query.ilike("title", `%${search}%`);
+    }
+    const { data, error, count } = await query;
     if (error) return fail("DB_QUERY", "Nao foi possivel listar.", 500);
-    return ok({ work_orders: data });
+    return ok({ work_orders: data, page, page_size: pageSize, total: count ?? data.length });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);

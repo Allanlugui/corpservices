@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
@@ -27,30 +27,38 @@ export default function OSPage() {
   const [rows, setRows] = useState<Wo[]>([]);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/os")
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    const params = new URLSearchParams({ page: String(page), page_size: String(PAGE_SIZE) });
+    if (status) params.set("status", status);
+    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+    fetch(`/api/os?${params.toString()}`)
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok || json.error) setError(json.error?.message ?? "Falha ao carregar.");
-        else setRows(json.data.work_orders as Wo[]);
+        else {
+          setRows(json.data.work_orders as Wo[]);
+          setTotal(json.data.total as number);
+        }
       })
       .catch(() => setError("Falha de rede."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page, status, debouncedSearch]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return rows.filter(
-      (t) =>
-        (!status || t.status === status) &&
-        (!q || String(t.number).includes(q) || t.title.toLowerCase().includes(q)),
-    );
-  }, [rows, status, search]);
-  const paged = useMemo(() => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtered, page]);
+  const paged = rows;
 
   return (
     <section>
@@ -97,7 +105,7 @@ export default function OSPage() {
             emptyTitle="Nenhuma OS"
             emptyDescription="OS nascem de chamados convertidos ou criadas pelo gestor."
           />
-          <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onPage={setPage} />
+          <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
         </>
       )}
       <p className="mt-3 text-xs text-slate-500">

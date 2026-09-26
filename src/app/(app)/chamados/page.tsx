@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -32,35 +32,39 @@ function ChamadosInner({ initialTab }: { initialTab: Tab }) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const qs = tab === "todos" ? "" : `?kind=${tab}`;
-    fetch(`/api/chamados${qs}`)
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    const params = new URLSearchParams({ page: String(page), page_size: String(PAGE_SIZE) });
+    if (tab !== "todos") params.set("kind", tab);
+    if (status) params.set("status", status);
+    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+    fetch(`/api/chamados?${params.toString()}`)
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok || json.error) setError(json.error?.message ?? "Falha ao carregar.");
-        else setTickets(json.data.tickets as Ticket[]);
+        else {
+          setTickets(json.data.tickets as Ticket[]);
+          setTotal(json.data.total as number);
+        }
       })
       .catch(() => setError("Falha de rede."))
       .finally(() => setLoading(false));
-  }, [tab]);
+  }, [tab, page, status, debouncedSearch]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return tickets.filter(
-      (t) =>
-        (!status || t.status === status) &&
-        (!q || String(t.number).includes(q) || t.requester_name.toLowerCase().includes(q)),
-    );
-  }, [tickets, status, search]);
-
-  const paged = useMemo(
-    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [filtered, page],
-  );
+  const paged = tickets;
 
   function switchTab(t: Tab) {
     setTab(t);
@@ -128,7 +132,7 @@ function ChamadosInner({ initialTab }: { initialTab: Tab }) {
             emptyTitle="Nenhum chamado encontrado"
             emptyDescription="Ajuste os filtros ou aguarde novos tickets do portal."
           />
-          <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onPage={setPage} />
+          <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
         </>
       )}
     </section>
