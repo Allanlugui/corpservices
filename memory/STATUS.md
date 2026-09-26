@@ -50,6 +50,12 @@
 - E2E: árvore A CONCLUIDA (12 eventos, 1 pedido) · árvore B rejeição→reenvio→aprovação→recebimento→OS retomada e ENCERRADA.
 - Producao: API 200 (n=4) + UI nova no ar. FASE 06 CONCLUIDA.
 
+## AJUSTE COMPRAS VIEWS (CONCLUIDO, 2026-09-26)
+- Solicitações: coluna Item (primeiro item + contador).
+- Cotações: agrupadas por compra + filtros (nº, fornecedor, escolhida/cotada).
+- Pedidos: filtro por situação (aberto/pago/recebido/cancelado) + status da solicitação.
+- E2E views OK · deploy READY.
+
 ## REVISÃO CHAMADOS/OS/COMPRAS (CONCLUIDA, 2026-09-26)
 - Rastreabilidade: timelines mostram "por {nome}" (actors via profiles+Auth); rejeição exibe autor.
 - Chamados: designar/remover responsável (/api/team), voltar EM_ANALISE→EM_TRIAGEM.
@@ -57,6 +63,8 @@
 - Compras: submenu vira filtro (Solicitações/Cotações/Pedidos, API views); escolher cotação exige gestor (D-17); detalhe mostra origem legível (OS-000002 · título).
 - E2E: 9 verificações SIM · 29 testes · produção (views 200, team 200).
 - Fica p/ depois (confirmado): upload de fotos (Fase 08), e-mail/push (P-05).
+
+## FASE 06 — Compras (CONCLUIDA, 2026-09-26)
 - Migration v4 (5 tabelas, origem com CHECK) + domínio + 28 testes.
 - APIs: criar por ticket/OS/manual, 13 transições, cotar/escolher, aprovação só gestor, pedido auto na aprovação, RECEBIDA → COMPONENTE_RECEBIDO na OS, rejeição → COMPRA_REJEITADA (OS segue pausada).
 - UI /compras + detalhe 4 abas + criação a partir do ticket e da OS pausada.
