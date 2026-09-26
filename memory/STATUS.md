@@ -103,3 +103,10 @@ Feito (validado): Fases 00â€“07, correÃ§Ã£o UX, 2 revisÃµes. Pendente real:
 - M-01 preview + M-02 dedupe (barcode/nome, fornecedor exibido) + confirm em lote.
 - RBAC: files:create p/ todos operacionais; delete só gestor/admin (D-20).
 - E2E: bloqueio, upload, signed, preview+unificação OK · prod xml-preview 200 + /arquivos no ar.
+
+## FASE 09 — Offline-first v1 (CONCLUIDA, 2026-09-26)
+- Migration v9 (client_key em tickets + eventos, unique+indices).
+- Outbox localStorage + chaves UUID + sync engine (servidor vence, replay idempotente).
+- Portal cria na fila offline; acoes Chamados/OS enfileiram; header com PENDENTES + sincronizar.
+- E2E: reenvio nao duplica (ticket #12, evento unico) · 38 testes · deploy READY.
+- Limite honesto: fila de operacoes (fotos offline e sync bidirecional completo ficam p/ evolucao).
