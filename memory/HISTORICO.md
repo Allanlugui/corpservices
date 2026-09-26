@@ -14,7 +14,10 @@
   - Gates: vitest 5/5 · tsc 0 · lint 0 · build OK · `next start :3101` com 9 rotas 200.
   - D-13 registrada. Commit 8ce2a3b + push pendente (sem remote).
 - **2026-09-26 — FASE 02 (identidade, operacional):**
+  - Causa: bloco `body{...}` sem `@layer` no `globals.css` vencia as utilities do Tailwind v4 (fundo preto, texto invisivel). Fix: remover regras fora de camada; cores so via classes. Dashboard atualizado p/ Fase 03 (1/8 modulos, 1/5 integracoes). Producao validada (`/solicitar` renderiza, health CONFIGURADO).
   - Segredos em `.env.local`; clients browser/server/admin; middleware + `/login` + logout; RBAC puro (10/10 testes).
   - Migration v1 aplicada com senha do usuario (6 tabelas, RLS, 44 grants; REST anon 200 `[]`).
   - Admin `jallanluiz@gmail.com` criado (org CorpServices, role admin, login OK).
   - GitHub: repo privado `Allanlugui/corpservices` + push OK. Vercel BLOQUEADO sem token (P-03).
+- **2026-09-26 — fix UI (tema quebrado em producao):**
+  - Causa: bloco `body{...}` sem `@layer` no `globals.css` vencia as utilities do Tailwind v4 (fundo preto, texto invisivel). Fix: remover regras fora de camada; cores so via classes. Dashboard atualizado p/ Fase 03 (1/8 modulos, 1/5 integracoes). Producao validada (`/solicitar` renderiza, health CONFIGURADO).
