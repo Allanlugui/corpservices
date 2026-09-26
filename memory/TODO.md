@@ -66,8 +66,15 @@
 - [x] 06.5 E2E duas arvores validado
 - [x] 06.6 Push + producao + memoria final
 
-## FASES 06–12 [PLANEJADAS — detalhadas apos Fase 05]
-- [ ] 06 Compras (duas arvores) + cotacao/aprovacao/pagamento/recebimento
+## REVISÃO CHAMADOS/OS/COMPRAS [CONCLUIDA 2026-09-26]
+- [x] R1 Migration v5 (assigned_to, justification, requires_photo, parent)
+- [x] R2 Atores no historico (actor_name nas 3 timelines)
+- [x] R3 Chamados: designar + voltar EM_ANALISE→EM_TRIAGEM
+- [x] R4 OS filha + bloqueio, materiais, foto flag, pausas UX
+- [x] R5 Compras views + regra gestor + origem legivel
+- [x] R6 E2E 9 verificações + prod
+
+## FASES 07–12 [PLANEJADAS]
 - [ ] 07 Estoque (CRUD, NF/XML tolerante, validade, metricas)
 - [ ] 08 Arquivos (explorador por OS) + 09 Offline-first real + 10 BotIA LLM (opcional)
 - [ ] 11 ERP real (quando houver docs) + 12 Notificacoes/Dashboard/Metas/PDF/Auditoria/Relatorios/Backup honesto
