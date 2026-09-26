@@ -29,8 +29,8 @@
 - [x] 02.5 Migration v1 APLICADA via psql-direto (pg) e validada (P-07 resolvido)
 - [x] 02.6 Usuario admin criado (org CorpServices + role admin, login testado OK)
 - [x] 02.7 GitHub: repo privado + push OK
-- [ ] 02.8 Vercel deploy (BLOQUEADO — aguardando token; P-03)
-- [ ] 02.9 AVAL HUMANO → FASE 03
+- [x] 02.8 Vercel deploy + PRODUCAO VALIDADA (P-03 resolvido)
+- [x] 02.9 FASE 02 encerrada → FASE 03 liberada
 
 ## FASE 03 — Tickets e triagem BotIA [PLANEJADA]
 - [ ] 03.1 Portal publico + BotIA conversacional (DeterministicProvider) + anexos
