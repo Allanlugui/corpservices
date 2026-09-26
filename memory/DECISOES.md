@@ -116,3 +116,8 @@
 - Contexto: migração futura para MongoDB/MariaDB/outros.
 - Escolha: export JSON (dados + mapa de coleções + restore_notes) somente admin; DDL canônico nas migrations; sem replicação ao vivo.
 - Reversao: baixa.
+
+## D-22 — PDF com pdf-lib + Metas mensais (2026-09-26)
+- Contexto: documento elegante sem infra de render; metas nunca hardcoded.
+- Escolha: faixa de marca, tabelas zebra, rodapé paginado, sanitização WinAnsi; goals com 4 métricas e progresso no mês.
+- Reversao: baixa.

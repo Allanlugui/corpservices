@@ -109,6 +109,7 @@
 - [x] M-03 Auditoria/logs em Configurações
 - [x] Ajustes2: auditoria viva por usuário, auditoria em Config, logs técnicos, saúde visual, fornecedores CRUD, backup export
 - [x] PDF por entidade (ticket/OS/compra) com histórico e paginação
+- [x] PDF profissional (faixa, tabelas zebra, rodapé) + Metas configuráveis com progresso real
 - [ ] Metas (UI)
 - [ ] Relatórios com export
 - [ ] Dashboards por perfil
