@@ -1,0 +1,9 @@
+# Status do Projeto: corpservices
+
+- **Data:** 2026-09-26
+- **Fase atual:** FASE 00 — Descoberta, auditoria e arquitetura (planejamento CONCLUIDO, commit pendente, aval humano pendente)
+- **Estado real do repo:** vazio — apenas `AGENTS.md` + `memory/`; sem codigo, sem git, sem dependencias, sem `.env`, sem Supabase/Vercel/GitHub.
+- **Entregue nesta sessao:** `ARCHITECTURE.md` (stack, modulos, dados, RBAC, estados, SLA, offline, BotIA, ERP, auditoria), `DECISOES.md` (D-01…D-12), `TODO.md` (backlog por fases), `PROBLEMAS.md`, `HISTORICO.md`.
+- **Validado:** leitura do cerebro global/local + Subconsciente; auditoria factual (Node v24.13.0, npm 11.6.2, `not a git repository`).
+- **Nao validado:** Serena (`get_current_config` timeout MCP -32001); todo o resto e PLANEJADO, nada IMPLEMENTADO.
+- **Proximo passo:** commit local da Fase 00 → PARAR → aval humano → autorizar FASE 01 (scaffold) + prover credenciais Supabase/GitHub/Vercel.
