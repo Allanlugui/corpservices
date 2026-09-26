@@ -121,3 +121,9 @@
 - Contexto: documento elegante sem infra de render; metas nunca hardcoded.
 - Escolha: faixa de marca, tabelas zebra, rodapé paginado, sanitização WinAnsi; goals com 4 métricas e progresso no mês.
 - Reversao: baixa.
+
+## D-23 — Fechamento Fase 12: dashboards por perfil + parâmetros consumidos + assignment (2026-09-26)
+- Contexto: auditoria P1-01/P1-02/P2.
+- Escolha: 5 visões reaproveitando endpoints; 3 parâmetros com consumidor real + auditoria; assertAssigneeInOrg puro + checagem nas rotas.
+- Divergência auditoria: entrada-xml legada MANTIDA (decisão humana pendente, item 5).
+- Reversao: baixa.

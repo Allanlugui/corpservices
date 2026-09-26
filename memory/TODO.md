@@ -111,8 +111,9 @@
 - [x] PDF por entidade (ticket/OS/compra) com histórico e paginação
 - [x] PDF profissional (faixa, tabelas zebra, rodapé) + Metas configuráveis com progresso real
 - [x] Relatórios com filtros + CSV com BOM + impressão
-- [ ] Metas (UI)
-- [ ] Relatórios com export
+- [x] P1-01 Dashboards por perfil (5 visões, dados reais)
+- [x] P1-02 Parâmetros (3 com consumidor + auditoria) — migration BLOQUEADA p/ apply (P-08)
+- [x] P2 Assignment validado server-side + 5 testes
 - [ ] Dashboards por perfil
 - [ ] Backup honesto / parâmetros
 
