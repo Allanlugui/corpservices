@@ -36,3 +36,11 @@
 - Design system inicial: `PageHeader, StatCard, EmptyState, Badge` + `AppNav` (pt-BR) + PWA PARCIAL (manifest + SW ciclo-de-vida; cache offline = FASE 09).
 - Supabase: `src/lib/supabase.ts` fail-closed (`SupabaseNotConfiguredError`); `.env.example`; conexao real BLOQUEADA (P-02).
 - Gates: vitest 5/5 · tsc 0 · lint 0 · build OK · 9 rotas 200 em `next start` (porta 3101).
+
+## CORREÇÃO UI/UX (CONCLUIDA, 2026-09-26)
+- ANTES: topbar única, sem sidebar, portal público vendo navegação interna, dashboard estático Fase 01, 4 primitivas, sem filtros/paginação/toast/skeleton, sem indicador offline, sem RBAC na navegação.
+- DEPOIS: AppShell (sidebar colapsável + drawer mobile + header com breadcrumb, sync e UserMenu), route groups (public)/(app), 20 primitivas, dashboard com KPIs reais, Chamados com FilterBar+DataTable+paginação, detalhe com Tabs+Timeline+ConfirmDialog+toast, sidebar filtrada por papel, indicador ONLINE/OFFLINE real, skip-link e foco visível.
+- Incidente: `Badge.tsx` vs `badge` quebrou build Linux → padrão minúsculas (D-14).
+- Produção validada com sessão real (dashboard novo no ar).
+
+## FASE 05 — Ordem de Serviço [EM ANDAMENTO]

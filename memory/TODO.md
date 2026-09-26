@@ -46,13 +46,15 @@
 - [x] 04.3 E2E autenticado (LIST/PATCH/eventos)
 - [x] 04.4 Gates + push + producao
 
-## FASE 05 — Ordem de Servico [PLANEJADA — aguardando aval]
+## CORREÇÃO UI/UX [CONCLUIDA 2026-09-26]
+- [x] UX.1–UX.6 (auditoria, AppShell, design system, migração, RBAC/responsivo, gates+prod)
 
-## FASE 04 — Chamados [PLANEJADA]
-- [ ] 04.1 Tela central + acoes do gestor (resolver/encaminhar/converter OS/compra)
-
-## FASE 05 — Ordem de Servico [PLANEJADA]
-- [ ] 05.1 Ciclo completo + pausas configuraveis + compra vinculada + SLA congelado (testes deterministicos)
+## FASE 05 — Ordem de Servico [EM ANDAMENTO]
+- [ ] 05.1 Migration v3 (work_orders + pausas + checklist + materiais + eventos)
+- [ ] 05.2 Domain: estados OS + SLA deterministico + testes
+- [ ] 05.3 APIs (criar a partir de ticket, atribuir, pausar/retomar, concluir, validar, encerrar)
+- [ ] 05.4 UI /os + /os/[id] (abas, timeline, pausas)
+- [ ] 05.5 E2E + gates + producao
 
 ## FASES 06–12 [PLANEJADAS — detalhadas apos Fase 05]
 - [ ] 06 Compras (duas arvores) + cotacao/aprovacao/pagamento/recebimento
