@@ -6,6 +6,7 @@ import { can } from "@/domain/rbac";
 import { transitionOs, type OsStatus } from "@/domain/os-states";
 import { resolveActors, withActorNames } from "@/lib/actors";
 import { notifyRoles, notifyUser } from "@/lib/notify";
+import { adminFindProfile, assertAssigneeInOrg } from "@/lib/assignment";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -134,6 +135,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const patch: Record<string, unknown> = { status: to, updated_at: new Date(now).toISOString() };
 
     if (action === "assign" && parsed.data.action === "assign") {
+      const check = await assertAssigneeInOrg(adminFindProfile(admin), session.orgId, parsed.data.assigned_to);
+      if (!check.ok) return fail("NOT_FOUND", "Usuário fora da organização.", 404);
       patch["assigned_to"] = parsed.data.assigned_to;
       detail["assigned_to"] = parsed.data.assigned_to;
       await notifyUser(admin, session.orgId, {

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
+import { getSetting } from "@/app/api/configuracoes/route";
 
 const OWNER_TABLE: Record<string, string> = {
   work_order: "work_orders",
@@ -16,7 +17,6 @@ const ALLOWED_MIME = new Set([
   "application/pdf", "text/xml", "application/xml",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]);
-const MAX_BYTES = 10 * 1024 * 1024;
 
 async function ownerOrgId(admin: ReturnType<typeof createAdminClient>, ownerType: string, ownerId: string): Promise<string | null> {
   if (ownerType === "checklist_item") {
@@ -96,10 +96,13 @@ export async function POST(request: Request) {
     const folder = String(form.get("folder") ?? "documentos");
     if (!(file instanceof File)) return fail("VALIDATION", "Arquivo ausente.", 422);
     if (!ALLOWED_MIME.has(file.type)) return fail("INVALID_TYPE", `Tipo nao permitido: ${file.type || "desconhecido"}.`, 422);
-    if (file.size <= 0 || file.size > MAX_BYTES) return fail("INVALID_SIZE", "Arquivo vazio ou maior que 10MB.", 422);
+    const admin = createAdminClient();
+    const maxMb = await getSetting(admin, session.orgId, "files_max_mb");
+    if (file.size <= 0 || file.size > maxMb * 1024 * 1024) {
+      return fail("INVALID_SIZE", `Arquivo vazio ou maior que ${maxMb}MB.`, 422);
+    }
     if (!z.string().uuid().safeParse(ownerId).success) return fail("VALIDATION", "owner invalido.", 422);
 
-    const admin = createAdminClient();
     const orgId = await ownerOrgId(admin, ownerType, ownerId);
     if (!orgId || orgId !== session.orgId) return fail("NOT_FOUND", "Destino nao encontrado.", 404);
 

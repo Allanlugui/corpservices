@@ -7,6 +7,7 @@ import { can } from "@/domain/rbac";
 const querySchema = z.object({
   kind: z.enum(["servico", "compra"]).optional(),
   status: z.string().optional(),
+  mine: z.enum(["0", "1"]).default("0"),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
@@ -29,6 +30,8 @@ export async function GET(request: Request) {
       .limit(parsed.data.limit);
     if (parsed.data.kind) query = query.eq("kind", parsed.data.kind);
     if (parsed.data.status) query = query.eq("status", parsed.data.status);
+    // Solicitante acompanha as próprias solicitações (identificação do portal).
+    if (parsed.data.mine === "1") query = query.eq("requester_email", session.email);
     const { data, error } = await query;
     if (error) return fail("DB_QUERY", "Nao foi possivel listar.", 500);
     return ok({ tickets: data });

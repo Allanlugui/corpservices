@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
+import { getSetting } from "@/app/api/configuracoes/route";
 
 const createSchema = z.object({
   title: z.string().trim().min(3).max(160),
@@ -12,7 +13,7 @@ const createSchema = z.object({
   ticket_id: z.string().uuid().optional(),
   parent_work_order_id: z.string().uuid().optional(),
   assigned_to: z.string().uuid().optional(),
-  sla_days: z.number().min(1).max(365).default(10),
+  sla_days: z.number().min(1).max(365).optional(),
 });
 
 export async function GET(request: Request) {
@@ -82,7 +83,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const slaTotal = Math.round(parsed.data.sla_days * 86_400_000);
+    const slaDays = parsed.data.sla_days ?? (await getSetting(admin, session.orgId, "os_sla_days_default"));
+    const slaTotal = Math.round(slaDays * 86_400_000);
     const { data: wo, error } = await admin
       .from("work_orders")
       .insert({

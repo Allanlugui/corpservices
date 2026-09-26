@@ -3,6 +3,7 @@ import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 import { expiryAlert, stockAlert } from "@/domain/inventory";
+import { getSetting } from "@/app/api/configuracoes/route";
 
 /** Alertas: zerado, baixo, excesso, vencido, próximo do vencimento, cadastro incompleto. */
 export async function GET() {
@@ -23,6 +24,7 @@ export async function GET() {
       .eq("products.org_id", session.orgId)
       .gt("quantity", 0);
     const now = Date.now();
+    const warnDays = await getSetting(admin, session.orgId, "stock_expiry_warn_days");
     const stock = (products ?? []).flatMap((p) => {
       const alert = stockAlert(Number(p.quantity), Number(p.stock_min), Number(p.stock_max));
       const list: { type: string; product_id: string; product: string; detail: string }[] = [];
@@ -41,7 +43,7 @@ export async function GET() {
     });
     const names = new Map((products ?? []).map((p) => [p.id as string, p.name as string]));
     const expiry = (batches ?? []).flatMap((b) => {
-      const alert = expiryAlert(b.expires_at as string | null, now);
+      const alert = expiryAlert(b.expires_at as string | null, now, warnDays);
       if (alert === "ok" || alert === "nao_aplicavel") return [];
       return [{
         type: alert === "vencido" ? "vencido" : "proximo",

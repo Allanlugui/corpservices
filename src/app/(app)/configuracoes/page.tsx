@@ -8,10 +8,12 @@ import { Card } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/fields";
 import { LoadingState } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/states";
+import { useToast } from "@/components/ui/toast";
 import { AuditoriaViewer } from "@/components/AuditoriaViewer";
 import { LogsViewer } from "@/components/LogsViewer";
-import { ModulePlaceholder } from "@/components/ModulePlaceholder";
 
 interface Health {
   status: string;
@@ -107,6 +109,73 @@ function Backup() {
   );
 }
 
+function Parametros() {
+  const toast = useToast();
+  const [settings, setSettings] = useState<{ key: string; label: string; type: string; min: number; max: number; default: number; consumer: string; value: number }[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/configuracoes")
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok || json.error) setError(json.error?.message ?? "Falha ao carregar.");
+        else setSettings(json.data.settings);
+      })
+      .catch(() => setError("Falha de rede."));
+  }, []);
+
+  async function save(key: string, value: number) {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/configuracoes", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, value }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Não foi possível salvar.", "error");
+      else toast("Parâmetro salvo (com auditoria).");
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (error) return <ErrorState title="Parâmetros indisponíveis" description={error} onRetry={() => window.location.reload()} />;
+  return (
+    <div className="grid gap-3">
+      {settings.map((s) => (
+        <Card key={s.key} title={s.label}>
+          <p className="text-xs text-slate-500">Usado em: {s.consumer} · padrão {s.default} · faixa {s.min}–{s.max}</p>
+          <div className="mt-2 flex items-end gap-2">
+            <div className="w-32">
+              <Input label="Valor" type="number" min={s.min} max={s.max} defaultValue={s.value} id={`param-${s.key}`} />
+            </div>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => {
+                const el = document.getElementById(`param-${s.key}`) as HTMLInputElement | null;
+                const v = Number(el?.value);
+                if (!Number.isFinite(v)) {
+                  toast("Valor inválido.", "error");
+                  return;
+                }
+                void save(s.key, v);
+              }}
+            >
+              Salvar
+            </Button>
+          </div>
+        </Card>
+      ))}
+      {settings.length === 0 ? <LoadingState label="Carregando parâmetros…" /> : null}
+    </div>
+  );
+}
+
 function ConfigInner({ initialTab }: { initialTab: number }) {
   return (
     <section>
@@ -121,13 +190,7 @@ function ConfigInner({ initialTab }: { initialTab: number }) {
           {
             id: "parametros",
             label: "Parâmetros",
-            content: (
-              <ModulePlaceholder
-                title="Parâmetros"
-                fase="FASE 12"
-                description="Empresa, papéis, SLAs, motivos de pausa e templates."
-              />
-            ),
+            content: <Parametros />,
           },
         ]}
       />

@@ -6,6 +6,7 @@ import { can } from "@/domain/rbac";
 import { TICKET_STATUSES, transition, type TicketStatus } from "@/domain/ticket-states";
 import { resolveActors, withActorNames } from "@/lib/actors";
 import { notifyUser } from "@/lib/notify";
+import { adminFindProfile, assertAssigneeInOrg } from "@/lib/assignment";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -95,6 +96,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       to = transition(from, parsed.data.to);
       event = to === "RESOLVIDO" ? "RESOLVIDO" : to === "ENCERRADO" ? "ENCERRADO" : "ALTERADO";
     } else if (parsed.data.action === "assign") {
+      // P2: o assignee precisa pertencer à organização da sessão.
+      const check = await assertAssigneeInOrg(adminFindProfile(admin), session.orgId, parsed.data.assigned_to);
+      if (!check.ok) return fail("NOT_FOUND", "Usuário fora da organização.", 404);
       // Atribuicao nao muda o status; registra quem assumiu e permite trocar depois.
       to = from;
       event = "ATRIBUIDO";
