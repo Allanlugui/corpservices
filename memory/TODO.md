@@ -104,7 +104,14 @@
 - [ ] 10 BotIA LLM (hoje só determinístico)
 - [ ] 11 ERP real (quando houver docs)
 - [ ] 12 Notificações + Metas + PDF + Auditoria hash-chain + Relatórios export + Backup honesto + dashboards por perfil + configurações
-- [ ] M-03 Auditoria/logs no front (Configurações): extrair logs do sistema p/ diagnóstico e correções
+## FASE 12 — parcial [EM ANDAMENTO]
+- [x] Notificações in-app (migration, emissão, sino, central)
+- [x] M-03 Auditoria/logs em Configurações
+- [ ] PDF e documentos
+- [ ] Metas (UI)
+- [ ] Relatórios com export
+- [ ] Dashboards por perfil
+- [ ] Backup honesto / parâmetros
 
 ## Dependencias externas (BLOQUEADO POR DEPENDENCIA EXTERNA ate providas)
 - [ ] Supabase URL + keys · GitHub remote · Vercel projeto · SMTP/push · provedor LLM · API ERP
