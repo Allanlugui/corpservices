@@ -15,7 +15,13 @@
 - Proximo: (a) trocar senha temporaria do admin, (b) token Vercel para deploy (P-03), (c) AVAL → FASE 03.
 - **GitHub:** repo privado `Allanlugui/corpservices`, branch master, push OK (4 commits).
 - **Vercel:** projeto `corpservices` (git Allanlugui/corpservices) com deploy automatico; PRODUCAO VALIDADA em `https://corpservices.vercel.app` (health 200 Supabase=CONFIGURADO, /login 200, `/` → 307 /login). Nota: URLs de preview exigem login Vercel (Deployment Protection); alias de producao e publico.
-- **Git:** identidade `Allanlugui <jallanluiz@gmail.com>`; 7 commits no ar.
+## FASE 03 — Tickets e triagem BotIA (CONCLUIDA, 2026-09-26)
+- Migration v2 aplicada: tickets, ticket_messages, ticket_attachments, ticket_events, ai_conversations, ai_messages, ai_actions + RPC `get_ticket_by_token`.
+- BotIA: `AIProvider` + `DeterministicProvider` (classifica, aponta faltantes, nunca sobrescreve humano em empate); trilha auditavel por solicitacao.
+- Portal `/solicitar` (publico, mobile-first, 5 etapas) + `/solicitar/acompanhar` (token) + APIs POST/GET.
+- E2E local: ticket #3 criado → triagem servico → evento CRIADO → acompanhar retorna protocolo+historico.
+- RLS: anon select externo → 200 `[]` (sem vazamento); leitura publica somente via RPC com token.
+- Producao: `/solicitar` 200 OK. Pendente conhecido: upload de fotos → FASE 08; e-mail do link → sem SMTP (P-05).
 - **Git:** commit local `cac928c` OK; `push` BLOQUEADO (sem remote — P-01); Vercel NAO CONFIGURADO (P-03).
 
 ## FASE 01 — Fundacao tecnica (CONCLUIDA local, 2026-09-26)

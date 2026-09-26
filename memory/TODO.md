@@ -32,9 +32,17 @@
 - [x] 02.8 Vercel deploy + PRODUCAO VALIDADA (P-03 resolvido)
 - [x] 02.9 FASE 02 encerrada → FASE 03 liberada
 
-## FASE 03 — Tickets e triagem BotIA [PLANEJADA]
-- [ ] 03.1 Portal publico + BotIA conversacional (DeterministicProvider) + anexos
-- [ ] 03.2 Ticket → Chamados (Servicos/Compras) + link seguro por e-mail
+## FASE 03 — Tickets e triagem BotIA [CONCLUIDA 2026-09-26]
+- [x] 03.1 Migration v2 aplicada (tickets + ai_* + RPC tracking)
+- [x] 03.2 Estados + DeterministicProvider + testes (17/17)
+- [x] 03.3 APIs POST /api/tickets + GET acompanhar
+- [x] 03.4 Portal /solicitar + /solicitar/acompanhar
+- [x] 03.5 E2E local + producao validada + push
+- Notas: upload de fotos → FASE 08; e-mail do link → P-05 (sem SMTP)
+
+## FASE 04 — Chamados [PLANEJADA — aguardando aval]
+- [ ] 04.1 Tela central Todos/Servicos/Compras (gestor, autenticado)
+- [ ] 04.2 Acoes: resolver, encaminhar, converter em OS/compra
 
 ## FASE 04 — Chamados [PLANEJADA]
 - [ ] 04.1 Tela central + acoes do gestor (resolver/encaminhar/converter OS/compra)
