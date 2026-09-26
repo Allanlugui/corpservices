@@ -5,6 +5,7 @@ import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 import { transitionOs, type OsStatus } from "@/domain/os-states";
 import { resolveActors, withActorNames } from "@/lib/actors";
+import { notifyRoles, notifyUser } from "@/lib/notify";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -135,6 +136,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (action === "assign" && parsed.data.action === "assign") {
       patch["assigned_to"] = parsed.data.assigned_to;
       detail["assigned_to"] = parsed.data.assigned_to;
+      await notifyUser(admin, session.orgId, {
+        userId: parsed.data.assigned_to,
+        kind: "os_atribuida",
+        title: `OS designada para você`,
+        body: "Verifique documentos e fotos antes de iniciar.",
+        link: `/os/${id}`,
+      });
     }
     if (action === "start" && !wo.started_at) patch["started_at"] = new Date(now).toISOString();
 
@@ -166,6 +174,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       detail["reason"] = parsed.data.reason;
       detail["sla_before_ms"] = wo.sla_remaining_ms;
       detail["sla_after_ms"] = remaining;
+      if (parsed.data.reason === "falta de componente") {
+        await notifyRoles(admin, session.orgId, ["gestor", "admin"], {
+          kind: "os_pausada_componente",
+          title: "OS pausada por falta de componente",
+          body: "Uma solicitação de compra vinculada pode ser necessária.",
+          link: `/os/${id}`,
+        }, session.userId);
+      }
     }
 
     if (action === "resume") {

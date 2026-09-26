@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { DeterministicProvider, type TicketKind } from "@/domain/botia";
+import { notifyRoles } from "@/lib/notify";
 
 const KIND_VALUES = ["servico", "compra"] as const;
 
@@ -125,6 +126,12 @@ export async function POST(request: Request) {
       to_status: "NOVO",
       detail: { channel: "portal", ai_suggested_kind: triage.suggestedKind },
       client_key: parsed.data.client_key ?? null,
+    });
+    await notifyRoles(admin, org_id, ["gestor", "admin"], {
+      kind: "ticket_criado",
+      title: `Novo ticket #${ticket.number} (${kind})`,
+      body: `${requester_name} — ${triage.summary}`,
+      link: `/chamados/${ticket.id}`,
     });
 
     return ok(

@@ -5,6 +5,7 @@ import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 import { transitionPurchase, type PurchaseStatus } from "@/domain/purchase-states";
 import { resolveActors, withActorNames } from "@/lib/actors";
+import { notifyRoles, notifyUser } from "@/lib/notify";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -70,7 +71,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!parsed.success) return fail("VALIDATION", "Acao invalida.", 422);
 
     const admin = createAdminClient();
-    const { data: req } = await admin.from("purchase_requests").select("id, status, work_order_id").eq("id", id).eq("org_id", session.orgId).single();
+    const { data: req } = await admin.from("purchase_requests").select("id, number, status, work_order_id, requested_by").eq("id", id).eq("org_id", session.orgId).single();
     if (!req) return fail("NOT_FOUND", "Compra nao encontrada.", 404);
     const from = req.status as PurchaseStatus;
     const detail: Record<string, unknown> = { actor: session.email };
@@ -141,6 +142,31 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         detail: { purchase_id: id },
       });
       await admin.from("purchase_orders").update({ status: "RECEBIDO" }).eq("request_id", id);
+      const { data: wo } = await admin.from("work_orders").select("assigned_to, number").eq("id", req.work_order_id).single();
+      if (wo?.assigned_to) {
+        await notifyUser(admin, session.orgId, {
+          userId: wo.assigned_to as string,
+          kind: "componente_recebido",
+          title: `Componente recebido (compra #${req.number})`,
+          body: "Retome a OS para continuar a execução.",
+          link: `/os/${req.work_order_id}`,
+        });
+      }
+    }
+    if (to === "AGUARDANDO_APROVACAO") {
+      await notifyRoles(admin, session.orgId, ["gestor", "admin"], {
+        kind: "compra_aprovacao",
+        title: `Compra #${req.number} aguarda aprovação`,
+        link: `/compras/${id}`,
+      }, session.userId);
+    }
+    if ((to === "APROVADA" || to === "REJEITADA") && req.requested_by) {
+      await notifyUser(admin, session.orgId, {
+        userId: req.requested_by as string,
+        kind: to === "APROVADA" ? "compra_aprovada" : "compra_rejeitada",
+        title: `Compra #${req.number} ${to === "APROVADA" ? "aprovada" : "rejeitada"}`,
+        link: `/compras/${id}`,
+      });
     }
     if (to === "CONCLUIDA") {
       await admin.from("purchase_requests").update({ updated_at: new Date().toISOString() }).eq("id", id);

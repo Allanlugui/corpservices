@@ -5,6 +5,7 @@ import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 import { TICKET_STATUSES, transition, type TicketStatus } from "@/domain/ticket-states";
 import { resolveActors, withActorNames } from "@/lib/actors";
+import { notifyUser } from "@/lib/notify";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -80,7 +81,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
     const { data: ticket } = await admin
       .from("tickets")
-      .select("id, status")
+      .select("id, status, number")
       .eq("id", id)
       .eq("org_id", session.orgId)
       .single();
@@ -100,6 +101,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       detail = { ...detail, assigned_to: parsed.data.assigned_to };
       const { error: assignError } = await admin.from("tickets").update({ assigned_to: parsed.data.assigned_to }).eq("id", id);
       if (assignError) return fail("DB_UPDATE", "Nao foi possivel atribuir.", 500);
+      if (parsed.data.assigned_to) {
+        await notifyUser(admin, session.orgId, {
+          userId: parsed.data.assigned_to,
+          kind: "ticket_atribuido",
+          title: `Chamado #${ticket.number} atribuído a você`,
+          link: `/chamados/${id}`,
+        });
+      }
       await admin.from("ticket_events").insert({
         ticket_id: id,
         event,

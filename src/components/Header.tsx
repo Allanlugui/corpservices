@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Bell, LogOut, Menu, User } from "lucide-react";
 import { Breadcrumb } from "./ui/breadcrumb";
 import { Dropdown } from "./ui/pagination";
@@ -49,7 +50,27 @@ export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const sync = useSync();
+  const [unread, setUnread] = useState(0);
   const title = TITLES[pathname] ?? "CorpServices";
+
+  useEffect(() => {
+    if (!me) return;
+    fetch("/api/notificacoes?unread=1")
+      .then(async (res) => {
+        const json = await res.json();
+        if (!json.error) setUnread(json.data.unread as number);
+      })
+      .catch(() => {});
+    const t = setInterval(() => {
+      fetch("/api/notificacoes?unread=1")
+        .then(async (res) => {
+          const json = await res.json();
+          if (!json.error) setUnread(json.data.unread as number);
+        })
+        .catch(() => {});
+    }, 60000);
+    return () => clearInterval(t);
+  }, [me, pathname]);
 
   async function logout() {
     await fetch("/api/logout", { method: "POST" });
@@ -77,8 +98,13 @@ export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
             Sincronizar
           </button>
         ) : null}
-        <Link href="/notificacoes" aria-label="Notificações" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-200/70">
+        <Link href="/notificacoes" aria-label={`Notificações${unread > 0 ? ` (${unread} não lidas)` : ""}`} className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-200/70">
           <Bell size={18} />
+          {unread > 0 ? (
+            <span aria-hidden className="absolute right-1 top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-700 px-1 text-[10px] font-bold text-white">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          ) : null}
         </Link>
         <Dropdown
           label={
