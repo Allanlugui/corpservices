@@ -99,7 +99,8 @@
 - [ ] F-02 Nota fiscal vinculada: anexar NF (física/e-mail) à compra/OS/chamado; XML importado salvo automaticamente como arquivo e linkado às entidades
 
 ## FASES 09–12 [PLANEJADAS]
-- [ ] 09 Offline-first real (fila/outbox/sync — hoje só indicador)
+## FASE 09 — Offline-first v1 [CONCLUIDA 2026-09-26]
+- [x] Migration v9 + outbox + sync + idempotencia (38 testes, E2E sem duplicar)
 - [ ] 10 BotIA LLM (hoje só determinístico)
 - [ ] 11 ERP real (quando houver docs)
 - [ ] 12 Notificações + Metas + PDF + Auditoria hash-chain + Relatórios export + Backup honesto + dashboards por perfil + configurações
