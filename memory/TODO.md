@@ -26,8 +26,8 @@
 - [x] 02.2 Clients + middleware + login/logout (redirect 307 VALIDADO)
 - [x] 02.3 RBAC domain + testes (10/10)
 - [x] 02.4 Migration v1 escrita (RLS + seeds)
-- [ ] 02.5 Aplicar migration no Supabase (dashboard ou senha DB) — P-07
-- [ ] 02.6 Criar usuario admin + profile vinculado
+- [x] 02.5 Migration v1 APLICADA via psql-direto (pg) e validada (P-07 resolvido)
+- [ ] 02.6 Criar usuario admin + profile vinculado (aguardando e-mail do admin)
 - [ ] 02.7 AVAL HUMANO → FASE 03
 
 ## FASE 03 — Tickets e triagem BotIA [PLANEJADA]

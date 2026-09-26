@@ -2,7 +2,7 @@
 
 ## Abertos
 - **P-01 (2026-09-26):** Sem repositorio git nem remote — `fatal: not a git repository`. Commit sera local; `push` BLOQUEADO ate `git remote` provido. Afeta: regra commit+push por tarefa.
-- **P-07 (2026-09-26):** Migration v1 escrita mas NAO APLICADA — sem senha do banco nem token de management API; postgREST nao executa DDL. Desbloqueio: (a) colar `supabase/migrations/20260926000000_identity_v1.sql` no Dashboard > SQL Editor > Run, ou (b) enviar `postgres://postgres:[senha]@db.hglxmpuvuqrdtsmmwrxf.supabase.co:5432/postgres` para apply via psql.
+- **P-07 (2026-09-26):** RESOLVIDO — migration aplicada via `pg` (psql ausente no host) com senha provida pelo usuario; verificadas 6 tabelas + RLS + 44 grants + REST anon 200 `[]`. Senha usada somente em variavel de ambiente transiente, nunca persistida em arquivo ou git.
 - **P-02 (2026-09-26):** PARCIALMENTE RESOLVIDO — Auth/REST acessiveis via anon key; persistencia de identidade aguarda P-07.
 - **P-03 (2026-09-26):** Sem projeto Vercel/GitHub. Deploy/validacao de producao NAO CONFIGURADO.
 - **P-04 (2026-09-26):** Serena MCP `get_current_config` → timeout `-32001`. Memoria local + global cobre continuidade; retentar ativacao na Fase 01. NAO VALIDADO.
