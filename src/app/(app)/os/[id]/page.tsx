@@ -343,7 +343,7 @@ function DetailInner({ id }: { id: string }) {
         <PageHeader
           title={`OS-${String(wo.number).padStart(6, "0")} · ${wo.title}`}
           description={`${wo.location ?? "Local não informado"} · SLA restante ${formatRemaining(wo.sla_remaining_ms)}${openPause ? " (congelado — pausada)" : ""}`}
-          actions={<><StatusBadge status={wo.status} /> <PriorityBadge priority={wo.priority} /></>}
+          actions={<><StatusBadge status={wo.status} /> <PriorityBadge priority={wo.priority} /> <a href={`/api/pdf?entity=os&id=${wo.id}`} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50">Baixar PDF</a></>}
         />
       </div>
       <Tabs

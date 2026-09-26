@@ -212,7 +212,7 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
         <PageHeader
           title={`Chamado #${ticket.number}`}
           description={`${ticket.requester_name} · ${ticket.requester_email} · ${new Date(ticket.created_at).toLocaleString("pt-BR")}`}
-          actions={<StatusBadge status={ticket.status} />}
+          actions={<><StatusBadge status={ticket.status} /> <a href={`/api/pdf?entity=ticket&id=${ticket.id}`} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50">Baixar PDF</a></>}
         />
       </div>
       <Tabs

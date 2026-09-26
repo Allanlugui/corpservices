@@ -170,7 +170,7 @@ function DetailInner({ id }: { id: string }) {
         <PageHeader
           title={`Compra #${p.number}`}
           description={`Origem ${p.origin === "TICKET" ? "cliente" : p.origin === "WORK_ORDER" ? "OS" : "manual"}${p.origin_label ? ` · ${p.origin_label}` : ""} · ${new Date(p.created_at).toLocaleString("pt-BR")}`}
-          actions={<StatusBadge status={p.status} />}
+          actions={<><StatusBadge status={p.status} /> <a href={`/api/pdf?entity=compra&id=${p.id}`} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50">Baixar PDF</a></>}
         />
       </div>
       {p.rejection_reason ? (

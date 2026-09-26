@@ -1,0 +1,128 @@
+import { z } from "zod";
+import { createAdminClient } from "@/lib/supabase-admin";
+import { fail } from "@/lib/api";
+import { AuthError, requireProfile } from "@/lib/require-auth";
+import { can } from "@/domain/rbac";
+import { resolveActors } from "@/lib/actors";
+import { buildPdf } from "@/lib/pdf";
+
+const querySchema = z.object({
+  entity: z.enum(["ticket", "os", "compra"]),
+  id: z.string().uuid(),
+});
+
+const PERM: Record<string, [string, string]> = {
+  ticket: ["tickets", "read"],
+  os: ["work_orders", "read"],
+  compra: ["purchases", "read"],
+};
+
+/** PDF por entidade: identificação, dados, histórico e trilha de geração. */
+export async function GET(request: Request) {
+  try {
+    const session = await requireProfile();
+    const url = new URL(request.url);
+    const parsed = querySchema.safeParse(Object.fromEntries(url.searchParams));
+    if (!parsed.success) return fail("VALIDATION", "Parâmetros inválidos.", 422);
+    const { entity, id } = parsed.data;
+    const [module, action] = PERM[entity] as [string, string];
+    if (!can(session.role, module as "tickets", action as "read")) {
+      return fail("FORBIDDEN", "Sem permissão.", 403);
+    }
+    const admin = createAdminClient();
+
+    if (entity === "ticket") {
+      const { data: t } = await admin.from("tickets").select("*").eq("id", id).eq("org_id", session.orgId).single();
+      if (!t) return fail("NOT_FOUND", "Não encontrado.", 404);
+      const { data: events } = await admin.from("ticket_events").select("event, from_status, to_status, actor_profile_id, created_at").eq("ticket_id", id).order("created_at");
+      const actors = await resolveActors((events ?? []).map((e) => e.actor_profile_id));
+      const bytes = await buildPdf({
+        title: `Ticket #${t.number}`,
+        subtitle: `${t.kind} · ${t.status} · aberto em ${new Date(t.created_at).toLocaleString("pt-BR")}`,
+        generatedBy: session.email,
+        sections: [
+          { title: "Solicitante", rows: [["Nome", t.requester_name as string], ["E-mail", t.requester_email as string], ["Responsável", "—"]] },
+          { title: "Conteúdo", rows: Object.entries((t.payload ?? {}) as Record<string, string>).map(([k, v]) => [k, v]) },
+          {
+            title: "Histórico",
+            rows: (events ?? []).map((e) => [
+              new Date(e.created_at as string).toLocaleString("pt-BR"),
+              `${e.event}${e.from_status ? ` (${e.from_status}→${e.to_status})` : ""} — por ${actors.get(e.actor_profile_id as string)?.name ?? "sistema"}`,
+            ]),
+          },
+        ],
+      });
+      return pdfResponse(bytes, `ticket-${t.number}.pdf`);
+    }
+
+    if (entity === "os") {
+      const { data: w } = await admin.from("work_orders").select("*").eq("id", id).eq("org_id", session.orgId).single();
+      if (!w) return fail("NOT_FOUND", "Não encontrada.", 404);
+      const [{ data: events }, { data: pauses }, { data: materials }] = await Promise.all([
+        admin.from("work_order_events").select("event, from_status, to_status, actor_profile_id, created_at").eq("work_order_id", id).order("created_at"),
+        admin.from("work_order_pauses").select("reason, paused_at, resumed_at, duration_ms, sla_before_ms, sla_after_ms").eq("work_order_id", id).order("paused_at"),
+        admin.from("work_order_materials").select("product_name, quantity, unit").eq("work_order_id", id),
+      ]);
+      const actors = await resolveActors((events ?? []).map((e) => e.actor_profile_id));
+      const bytes = await buildPdf({
+        title: `OS-${String(w.number).padStart(6, "0")} · ${w.title}`,
+        subtitle: `${w.status} · prioridade ${w.priority} · SLA restante ${Math.round(Number(w.sla_remaining_ms) / 3600000)}h`,
+        generatedBy: session.email,
+        sections: [
+          { title: "Execução", rows: [["Descrição", w.description as string], ["Local", (w.location as string) ?? ""], ["Início", w.started_at ? new Date(w.started_at as string).toLocaleString("pt-BR") : ""], ["Conclusão", w.finished_at ? new Date(w.finished_at as string).toLocaleString("pt-BR") : ""]] },
+          { title: "Pausas", rows: (pauses ?? []).map((p) => [`${p.reason}`, `${new Date(p.paused_at as string).toLocaleString("pt-BR")} → ${p.resumed_at ? new Date(p.resumed_at as string).toLocaleString("pt-BR") : "aberta"}`]) },
+          { title: "Materiais", rows: (materials ?? []).map((m) => [`${m.product_name}`, `${m.quantity} ${m.unit}`]) },
+          {
+            title: "Histórico",
+            rows: (events ?? []).map((e) => [
+              new Date(e.created_at as string).toLocaleString("pt-BR"),
+              `${e.event}${e.from_status ? ` (${e.from_status}→${e.to_status})` : ""} — por ${actors.get(e.actor_profile_id as string)?.name ?? "sistema"}`,
+            ]),
+          },
+        ],
+      });
+      return pdfResponse(bytes, `os-${w.number}.pdf`);
+    }
+
+    const { data: p } = await admin.from("purchase_requests").select("*").eq("id", id).eq("org_id", session.orgId).single();
+    if (!p) return fail("NOT_FOUND", "Não encontrada.", 404);
+    const [{ data: items }, { data: quotes }, { data: events }] = await Promise.all([
+      admin.from("purchase_request_items").select("item, quantity, description").eq("request_id", id),
+      admin.from("purchase_quotes").select("supplier, amount_cents, currency, chosen").eq("request_id", id),
+      admin.from("purchase_events").select("event, from_status, to_status, actor_profile_id, created_at").eq("request_id", id).order("created_at"),
+    ]);
+    const actors = await resolveActors((events ?? []).map((e) => e.actor_profile_id));
+    const bytes = await buildPdf({
+      title: `Compra #${p.number}`,
+      subtitle: `${p.status} · origem ${p.origin} · ${new Date(p.created_at).toLocaleString("pt-BR")}`,
+      generatedBy: session.email,
+      sections: [
+        { title: "Justificativa", rows: [["Texto", p.justification as string]] },
+        { title: "Itens", rows: (items ?? []).map((i) => [`${i.item}`, `${i.quantity} — ${i.description || ""}`]) },
+        { title: "Cotações", rows: (quotes ?? []).map((q) => [`${q.supplier}`, `${(Number(q.amount_cents) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}${q.chosen ? " (escolhida)" : ""}`]) },
+        {
+          title: "Histórico",
+          rows: (events ?? []).map((e) => [
+            new Date(e.created_at as string).toLocaleString("pt-BR"),
+            `${e.event}${e.from_status ? ` (${e.from_status}→${e.to_status})` : ""} — por ${actors.get(e.actor_profile_id as string)?.name ?? "sistema"}`,
+          ]),
+        },
+      ],
+    });
+    return pdfResponse(bytes, `compra-${p.number}.pdf`);
+  } catch (e) {
+    if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
+    return fail("INTERNAL", "Erro interno.", 500);
+  }
+}
+
+function pdfResponse(bytes: Uint8Array, filename: string): Response {
+  const body = new Uint8Array(bytes);
+  return new Response(body as unknown as BodyInit, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
+}
