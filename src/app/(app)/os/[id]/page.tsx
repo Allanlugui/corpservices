@@ -44,12 +44,14 @@ interface CheckItem {
   id: string;
   label: string;
   done: boolean;
+  requires_photo: boolean;
 }
 interface Material {
   id: string;
   product_name: string;
   quantity: number;
   unit: string;
+  justification: string;
 }
 
 interface Detail {
@@ -57,7 +59,9 @@ interface Detail {
   pauses: Pause[];
   checklist: CheckItem[];
   materials: Material[];
-  events: { event: string; from_status: string | null; to_status: string | null; created_at: string }[];
+  events: { event: string; from_status: string | null; to_status: string | null; actor_name: string; created_at: string }[];
+  children: { id: string; number: number; title: string; status: string }[];
+  parent: { id: string; number: number; title: string; status: string } | null;
 }
 
 const ACTIONS: Record<string, { label: string; action: string; extra?: Record<string, string> }[]> = {
@@ -147,7 +151,9 @@ function DetailInner({ id }: { id: string }) {
   const [reasons, setReasons] = useState<string[]>([]);
   const [confirm, setConfirm] = useState<{ label: string; body: Record<string, unknown> } | null>(null);
   const [newItem, setNewItem] = useState("");
-  const [newMat, setNewMat] = useState({ product_name: "", quantity: "1", unit: "un" });
+  const [newItemPhoto, setNewItemPhoto] = useState(false);
+  const [newMat, setNewMat] = useState({ product_name: "", quantity: "1", unit: "un", justification: "" });
+  const [childTitle, setChildTitle] = useState("");
 
   function load() {
     fetch(`/api/os/${id}`)
@@ -227,10 +233,11 @@ function DetailInner({ id }: { id: string }) {
     const res = await fetch(`/api/os/${id}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: newItem.trim() }),
+      body: JSON.stringify({ label: newItem.trim(), requires_photo: newItemPhoto }),
     });
     if (res.ok) {
       setNewItem("");
+      setNewItemPhoto(false);
       load();
     } else toast("Não foi possível adicionar.", "error");
   }
@@ -246,21 +253,43 @@ function DetailInner({ id }: { id: string }) {
   }
 
   async function addMaterial() {
-    if (!newMat.product_name.trim()) return;
+    if (!newMat.product_name.trim() || newMat.justification.trim().length < 3) {
+      toast("Informe material e justificativa.", "error");
+      return;
+    }
     const res = await fetch(`/api/os/${id}/items?kind=material`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ product_name: newMat.product_name.trim(), quantity: Number(newMat.quantity) || 1, unit: newMat.unit || "un" }),
+      body: JSON.stringify({ product_name: newMat.product_name.trim(), quantity: Number(newMat.quantity) || 1, unit: newMat.unit || "un", justification: newMat.justification.trim() }),
     });
     if (res.ok) {
-      setNewMat({ product_name: "", quantity: "1", unit: "un" });
+      setNewMat({ product_name: "", quantity: "1", unit: "un", justification: "" });
       load();
     } else toast("Não foi possível adicionar.", "error");
   }
 
+  async function createChild() {
+    if (childTitle.trim().length < 3) {
+      toast("Dê um título à OS filha.", "error");
+      return;
+    }
+    const res = await fetch("/api/os", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: childTitle.trim(), description: `Ocorrência vinculada à OS-${String(wo?.number ?? "?").padStart(6, "0")}`, parent_work_order_id: id }),
+    });
+    const json = await res.json();
+    if (!res.ok || json.error) toast(json.error?.message ?? "Não foi possível criar.", "error");
+    else {
+      toast(`OS filha #${json.data.number} criada.`);
+      setChildTitle("");
+      load();
+    }
+  }
+
   if (error && !detail) return <ErrorState title="OS indisponível" description={error} onRetry={() => window.location.reload()} />;
   if (!detail) return <LoadingState label="Carregando OS…" />;
-  const { work_order: wo, pauses, checklist, materials, events } = detail;
+  const { work_order: wo, pauses, checklist, materials, events, children, parent } = detail;
   const openPause = pauses.find((p) => !p.resumed_at);
 
   return (
@@ -314,25 +343,39 @@ function DetailInner({ id }: { id: string }) {
                 <Card title="Checklist">
                   <div className="grid gap-2">
                     {checklist.map((c) => (
-                      <Checkbox key={c.id} label={c.label} checked={c.done} onChange={() => void toggleCheck(c)} />
+                      <div key={c.id} className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <Checkbox label={c.label} checked={c.done} onChange={() => void toggleCheck(c)} />
+                        </div>
+                        {c.requires_photo ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900" title="Upload de foto chega na Fase 08">foto obrigatória</span> : null}
+                      </div>
                     ))}
                     {checklist.length === 0 ? <p className="text-sm text-slate-500">Nenhum item. Adicione o primeiro passo.</p> : null}
                   </div>
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 grid gap-2">
                     <Input label="Novo item" value={newItem} onChange={(e) => setNewItem(e.target.value)} />
-                    <Button variant="secondary" onClick={() => void addChecklist()} className="mt-auto">Adicionar</Button>
+                    <Checkbox label="Exigir foto neste item (upload na Fase 08)" checked={newItemPhoto} onChange={(e) => setNewItemPhoto(e.target.checked)} />
+                    <Button variant="secondary" onClick={() => void addChecklist()}>Adicionar</Button>
                   </div>
                 </Card>
                 <Card title="Materiais">
-                  <ul className="grid gap-1 text-sm">
-                    {materials.map((m) => <li key={m.id}>{m.quantity} {m.unit} × {m.product_name}</li>)}
+                  <ul className="grid gap-2 text-sm">
+                    {materials.map((m) => (
+                      <li key={m.id} className="rounded-lg border border-slate-200 p-2">
+                        <p className="font-semibold">{m.quantity} {m.unit} × {m.product_name}</p>
+                        <p className="text-slate-600">Para quê: {m.justification || "—"}</p>
+                      </li>
+                    ))}
                     {materials.length === 0 ? <li className="text-slate-500">Nenhum material consumido.</li> : null}
                   </ul>
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <div className="col-span-3"><Input label="Material" value={newMat.product_name} onChange={(e) => setNewMat({ ...newMat, product_name: e.target.value })} /></div>
-                    <Input label="Qtd" value={newMat.quantity} onChange={(e) => setNewMat({ ...newMat, quantity: e.target.value })} />
-                    <Input label="Un" value={newMat.unit} onChange={(e) => setNewMat({ ...newMat, unit: e.target.value })} />
-                    <Button variant="secondary" onClick={() => void addMaterial()} className="mt-auto">Adicionar</Button>
+                  <div className="mt-3 grid gap-2">
+                    <Input label="Material" value={newMat.product_name} onChange={(e) => setNewMat({ ...newMat, product_name: e.target.value })} />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input label="Qtd" value={newMat.quantity} onChange={(e) => setNewMat({ ...newMat, quantity: e.target.value })} />
+                      <Input label="Un" value={newMat.unit} onChange={(e) => setNewMat({ ...newMat, unit: e.target.value })} />
+                    </div>
+                    <Input label="Justificativa (para quê)" value={newMat.justification} onChange={(e) => setNewMat({ ...newMat, justification: e.target.value })} />
+                    <Button variant="secondary" onClick={() => void addMaterial()}>Adicionar</Button>
                   </div>
                 </Card>
               </div>
@@ -343,6 +386,21 @@ function DetailInner({ id }: { id: string }) {
             label: `Pausas (${pauses.length})`,
             content: (
               <Card title="Pausas e SLA">
+                <p className="mb-3 text-sm text-slate-600">
+                  Pausar congela o SLA (não consome prazo). Retomar devolve o restante intacto. Ações de pausa/retomada ficam aqui e no cartão de Ações.
+                </p>
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {wo.status === "EM_EXECUCAO" && (
+                    <Button disabled={busy} onClick={() => setConfirm({ label: "Pausar OS", body: { action: "pause", reason: pauseReason } })}>
+                      Pausar agora
+                    </Button>
+                  )}
+                  {wo.status === "PAUSADA" && (
+                    <Button disabled={busy} onClick={() => setConfirm({ label: "Retomar OS", body: { action: "resume" } })}>
+                      Retomar agora
+                    </Button>
+                  )}
+                </div>
                 {openPause && (
                   <div className="mb-4 grid gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
                     <p className="text-sm font-semibold">Pausa aberta: {openPause.reason} (SLA congelado)</p>
@@ -371,8 +429,42 @@ function DetailInner({ id }: { id: string }) {
             label: `Histórico (${events.length})`,
             content: (
               <Card title="Linha do tempo">
-                <Timeline items={events.map((e) => ({ title: `${e.event}${e.from_status ? ` (${e.from_status} → ${e.to_status})` : ""}`, at: e.created_at }))} />
+                <Timeline items={events.map((e) => ({ title: `${e.event}${e.from_status ? ` (${e.from_status} → ${e.to_status})` : ""} — por ${e.actor_name}`, at: e.created_at }))} />
               </Card>
+            ),
+          },
+          {
+            id: "filhas",
+            label: `OS filhas (${children.length})`,
+            content: (
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card title="Vinculadas a esta OS">
+                  {parent ? (
+                    <p className="mb-2 text-sm">Filha de: <Link href={`/os/${parent.id}`} className="font-semibold text-brand-700 hover:underline">OS-{String(parent.number).padStart(6, "0")} · {parent.title}</Link></p>
+                  ) : null}
+                  <ul className="grid gap-2 text-sm">
+                    {children.map((c) => (
+                      <li key={c.id}>
+                        <Link href={`/os/${c.id}`} className="font-mono font-bold hover:underline">OS-{String(c.number).padStart(6, "0")}</Link>
+                        {" "}{c.title} — <StatusBadge status={c.status} />
+                      </li>
+                    ))}
+                    {children.length === 0 && !parent ? <li className="text-slate-500">Nenhuma OS vinculada.</li> : null}
+                  </ul>
+                  {children.some((c) => c.status !== "ENCERRADA") ? (
+                    <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                      Esta OS não pode ser concluída enquanto houver filha aberta.
+                    </p>
+                  ) : null}
+                </Card>
+                <Card title="Abrir OS filha">
+                  <div className="grid gap-2">
+                    <Input label="Título da ocorrência vinculada" value={childTitle} onChange={(e) => setChildTitle(e.target.value)} />
+                    <Button variant="secondary" onClick={() => void createChild()}>Criar OS filha</Button>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">Ex.: durante a execução surgiu outro problema. A filha anda sozinha; a pai só finaliza após a filha encerrar.</p>
+                </Card>
+              </div>
             ),
           },
         ]}

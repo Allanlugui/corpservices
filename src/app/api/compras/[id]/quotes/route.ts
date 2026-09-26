@@ -46,8 +46,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "purchases", "update")) {
-      return fail("FORBIDDEN", "Sem permissao.", 403);
+    // Escolher cotacao e ato do gestor: comprador/estoque cotam, gestor decide (D-17).
+    if (!can(session.role, "purchases", "approve")) {
+      return fail("FORBIDDEN", "Escolha de cotacao exige gestor.", 403);
     }
     const { id } = paramsSchema.parse(await params);
     const parsed = z.object({ quote_id: z.string().uuid() }).safeParse(await request.json().catch(() => null));

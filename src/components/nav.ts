@@ -43,9 +43,9 @@ export const NAV: NavItem[] = [
     icon: ShoppingCart,
     perm: { module: "purchases", action: "read" },
     children: [
-      { href: "/compras", label: "Solicitações" },
-      { href: "/compras", label: "Cotações" },
-      { href: "/compras", label: "Pedidos" },
+      { href: "/compras?view=requests", label: "Solicitações" },
+      { href: "/compras?view=quotes", label: "Cotações" },
+      { href: "/compras?view=orders", label: "Pedidos" },
     ],
   },
   { href: "/estoque", label: "Estoque", icon: Package, perm: { module: "inventory", action: "read" } },

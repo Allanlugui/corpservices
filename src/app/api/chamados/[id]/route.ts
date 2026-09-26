@@ -4,6 +4,7 @@ import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 import { TICKET_STATUSES, transition, type TicketStatus } from "@/domain/ticket-states";
+import { resolveActors, withActorNames } from "@/lib/actors";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -12,6 +13,7 @@ const paramsSchema = z.object({ id: z.string().uuid() });
 const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("advance"), to: z.enum(TICKET_STATUSES) }),
   z.object({ action: z.literal("convert"), target: z.enum(["os", "compra"]) }),
+  z.object({ action: z.literal("assign"), assigned_to: z.string().uuid().nullable() }),
 ]);
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -31,7 +33,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     if (error || !ticket) return fail("NOT_FOUND", "Chamado nao encontrado.", 404);
     const { data: events } = await admin
       .from("ticket_events")
-      .select("event, from_status, to_status, detail, created_at")
+      .select("event, from_status, to_status, detail, actor_profile_id, created_at")
       .eq("ticket_id", id)
       .order("created_at", { ascending: true });
     const { data: messages } = await admin
@@ -39,7 +41,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       .select("author_kind, body, created_at")
       .eq("ticket_id", id)
       .order("created_at", { ascending: true });
-    return ok({ ticket, events: events ?? [], messages: messages ?? [] });
+    // Nome do responsável pelo ticket (atribuição).
+    let assignee_name: string | null = null;
+    if (ticket.assigned_to) {
+      const actors = await resolveActors([ticket.assigned_to as string]);
+      assignee_name = actors.get(ticket.assigned_to as string)?.name ?? null;
+    }
+    const named = withActorNames(events ?? [], await resolveActors((events ?? []).map((e) => e.actor_profile_id)));
+    return ok({ ticket: { ...ticket, assignee_name }, events: named, messages: messages ?? [] });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);
@@ -73,6 +82,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (parsed.data.action === "advance") {
       to = transition(from, parsed.data.to);
       event = to === "RESOLVIDO" ? "RESOLVIDO" : to === "ENCERRADO" ? "ENCERRADO" : "ALTERADO";
+    } else if (parsed.data.action === "assign") {
+      // Atribuicao nao muda o status; registra quem assumiu e permite trocar depois.
+      to = from;
+      event = "ATRIBUIDO";
+      detail = { ...detail, assigned_to: parsed.data.assigned_to };
+      const { error: assignError } = await admin.from("tickets").update({ assigned_to: parsed.data.assigned_to }).eq("id", id);
+      if (assignError) return fail("DB_UPDATE", "Nao foi possivel atribuir.", 500);
+      await admin.from("ticket_events").insert({
+        ticket_id: id,
+        event,
+        from_status: from,
+        to_status: to,
+        actor_profile_id: session.userId,
+        detail,
+      });
+      return ok({ id, from, to, assigned_to: parsed.data.assigned_to });
     } else {
       // Conversao: valida como ida a CONVERTIDO; destino registrado para as Fases 05/06.
       to = transition(from, "CONVERTIDO");

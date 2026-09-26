@@ -28,9 +28,10 @@ interface Detail {
     payload: Record<string, string>;
     ai_suggested_kind: string | null;
     ai_missing_fields: string[];
+    assignee_name: string | null;
     created_at: string;
   };
-  events: { event: string; from_status: string | null; to_status: string | null; detail: Record<string, unknown>; created_at: string }[];
+  events: { event: string; from_status: string | null; to_status: string | null; detail: Record<string, unknown>; actor_name: string; created_at: string }[];
 }
 
 const NEXT: Record<string, { label: string; to: string }[]> = {
@@ -39,7 +40,10 @@ const NEXT: Record<string, { label: string; to: string }[]> = {
     { label: "Enviar para análise", to: "EM_ANALISE" },
     { label: "Resolver direto", to: "RESOLVIDO" },
   ],
-  EM_ANALISE: [{ label: "Resolver", to: "RESOLVIDO" }],
+  EM_ANALISE: [
+    { label: "Devolver para triagem", to: "EM_TRIAGEM" },
+    { label: "Resolver", to: "RESOLVIDO" },
+  ],
   RESOLVIDO: [
     { label: "Encerrar", to: "ENCERRADO" },
     { label: "Reabrir análise", to: "EM_ANALISE" },
@@ -47,6 +51,46 @@ const NEXT: Record<string, { label: string; to: string }[]> = {
   CONVERTIDO: [{ label: "Encerrar", to: "ENCERRADO" }],
   ENCERRADO: [],
 };
+
+function AssignPicker({ onAssign, busy }: { onAssign: (id: string | null) => void; busy: boolean }) {
+  const [members, setMembers] = useState<{ id: string; display_name: string | null; role_key: string }[]>([]);
+  const [value, setValue] = useState("");
+
+  useEffect(() => {
+    fetch("/api/team")
+      .then(async (res) => {
+        const json = await res.json();
+        if (res.ok && !json.error) setMembers(json.data.members);
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="grid gap-2 border-t border-slate-100 pt-2">
+      <label className="block text-sm font-medium">
+        Designar responsável
+        <select
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+        >
+          <option value="">Selecione…</option>
+          {members.map((m) => (
+            <option key={m.id} value={m.id}>{m.display_name ?? "?"} ({m.role_key})</option>
+          ))}
+        </select>
+      </label>
+      <div className="flex gap-2">
+        <Button variant="secondary" disabled={busy || !value} onClick={() => onAssign(value || null)}>
+          Designar
+        </Button>
+        <Button variant="ghost" disabled={busy} onClick={() => onAssign(null)}>
+          Remover
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function NewPurchaseFromTicket({
   ticketId,
@@ -191,12 +235,19 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
                   ) : null}
                 </Card>
                 <Card title="Ações do gestor">
+                  <p className="mb-2 text-sm text-slate-600">
+                    Responsável: <strong>{ticket.assignee_name ?? "não atribuído"}</strong>
+                  </p>
                   <div className="grid gap-2">
                     {(NEXT[ticket.status] ?? []).map((a) => (
                       <Button key={a.to} disabled={busy} onClick={() => setConfirm({ label: a.label, body: { action: "advance", to: a.to } })}>
                         {a.label}
                       </Button>
                     ))}
+                    <AssignPicker
+                      onAssign={(assigned_to) => void act({ action: "assign", assigned_to }, assigned_to ? "Atribuir" : "Remover atribuição")}
+                      busy={busy}
+                    />
                     {(ticket.status === "EM_ANALISE" || ticket.status === "EM_TRIAGEM") && (
                       <>
                         <Button variant="secondary" disabled={busy} onClick={() => setConfirm({ label: "Converter em OS", body: { action: "convert", target: "os" } })}>
@@ -231,7 +282,7 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
               <Card title="Linha do tempo">
                 <Timeline
                   items={events.map((e) => ({
-                    title: e.event + (e.from_status ? ` (${e.from_status} → ${e.to_status})` : ""),
+                    title: `${e.event}${e.from_status ? ` (${e.from_status} → ${e.to_status})` : ""} — por ${e.actor_name}`,
                     detail: typeof e.detail?.convert_to === "string" ? `Destino: ${e.detail.convert_to}` : undefined,
                     at: e.created_at,
                   }))}

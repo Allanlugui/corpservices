@@ -13,7 +13,7 @@ export type TicketStatus = (typeof TICKET_STATUSES)[number];
 const TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
   NOVO: ["EM_TRIAGEM"],
   EM_TRIAGEM: ["EM_ANALISE", "RESOLVIDO"],
-  EM_ANALISE: ["CONVERTIDO", "RESOLVIDO"],
+  EM_ANALISE: ["EM_TRIAGEM", "CONVERTIDO", "RESOLVIDO"],
   CONVERTIDO: ["ENCERRADO"],
   RESOLVIDO: ["ENCERRADO", "EM_ANALISE"],
   ENCERRADO: [],

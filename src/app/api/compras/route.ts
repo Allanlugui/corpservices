@@ -29,7 +29,21 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const status = url.searchParams.get("status");
     const origin = url.searchParams.get("origin");
+    const view = url.searchParams.get("view") ?? "requests";
     const admin = createAdminClient();
+
+    if (view === "quotes" || view === "orders") {
+      const table = view === "quotes" ? "purchase_quotes" : "purchase_orders";
+      const { data, error } = await admin
+        .from(table)
+        .select("*, purchase_requests!inner(number, status, org_id)")
+        .eq("purchase_requests.org_id", session.orgId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) return fail("DB_QUERY", "Nao foi possivel listar.", 500);
+      return ok({ [view]: data });
+    }
+
     let query = admin
       .from("purchase_requests")
       .select("id, number, origin, status, priority, created_at")

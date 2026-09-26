@@ -15,6 +15,11 @@ describe("ticket-states", () => {
     expect(canTransition("RESOLVIDO", "NOVO")).toBe(false);
   });
 
+  it("EM_ANALISE pode voltar para EM_TRIAGEM", () => {
+    expect(canTransition("EM_ANALISE", "EM_TRIAGEM")).toBe(true);
+    expect(transition("EM_ANALISE", "EM_TRIAGEM")).toBe("EM_TRIAGEM");
+  });
+
   it("ENCERRADO e terminal", () => {
     expect(canTransition("ENCERRADO", "EM_ANALISE")).toBe(false);
   });

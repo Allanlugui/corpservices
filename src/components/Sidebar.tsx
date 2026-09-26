@@ -69,9 +69,12 @@ export function Sidebar({
                 {!collapsed && active && item.children ? (
                   <ul className="ml-9 mt-0.5 grid gap-0.5 border-l border-white/10 pl-2">
                     {item.children.map((child) => {
+                      const childUrl = new URL(child.href, "http://x");
                       const childActive =
-                        pathname === "/chamados" &&
-                        (searchParams.get("kind") ?? "") === new URL(child.href, "http://x").searchParams.get("kind");
+                        pathname === item.href &&
+                        [...childUrl.searchParams.entries()].every(
+                          ([k, v]) => searchParams.get(k) === v,
+                        );
                       return (
                         <li key={child.label}>
                           <Link

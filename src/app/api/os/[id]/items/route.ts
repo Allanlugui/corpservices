@@ -5,11 +5,15 @@ import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
-const itemSchema = z.object({ label: z.string().trim().min(1).max(200) });
+const itemSchema = z.object({
+  label: z.string().trim().min(1).max(200),
+  requires_photo: z.boolean().default(false),
+});
 const materialSchema = z.object({
   product_name: z.string().trim().min(1).max(160),
   quantity: z.number().positive().max(1000000),
   unit: z.string().trim().min(1).max(20).default("un"),
+  justification: z.string().trim().min(3).max(1000),
 });
 
 async function checkAccess(admin: ReturnType<typeof createAdminClient>, orgId: string, woId: string, userId: string, role: string) {
@@ -49,7 +53,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { count } = await admin.from("work_order_checklists").select("id", { count: "exact", head: true }).eq("work_order_id", id);
     const { data, error } = await admin
       .from("work_order_checklists")
-      .insert({ work_order_id: id, label: parsed.data.label, position: count ?? 0 })
+      .insert({ work_order_id: id, label: parsed.data.label, requires_photo: parsed.data.requires_photo, position: count ?? 0 })
       .select("id")
       .single();
     if (error) return fail("DB_INSERT", "Nao foi possivel registrar.", 500);

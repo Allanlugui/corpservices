@@ -4,6 +4,7 @@ import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 import { transitionPurchase, type PurchaseStatus } from "@/domain/purchase-states";
+import { resolveActors, withActorNames } from "@/lib/actors";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -39,7 +40,18 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       admin.from("purchase_orders").select("*").eq("request_id", id).order("created_at"),
       admin.from("purchase_events").select("*").eq("request_id", id).order("created_at"),
     ]);
-    return ok({ purchase: req, items: items ?? [], quotes: quotes ?? [], orders: orders ?? [], events: events ?? [] });
+    const named = withActorNames(events ?? [], await resolveActors((events ?? []).map((e) => e.actor_profile_id)));
+    // Origem legivel: numero/titulo do ticket ou da OS vinculada.
+    let origin_label: string | null = null;
+    if (req.ticket_id) {
+      const { data: t } = await admin.from("tickets").select("number").eq("id", req.ticket_id).single();
+      if (t) origin_label = `Chamado #${t.number}`;
+    }
+    if (req.work_order_id) {
+      const { data: w } = await admin.from("work_orders").select("number, title").eq("id", req.work_order_id).single();
+      if (w) origin_label = `OS-${String(w.number).padStart(6, "0")} · ${w.title}`;
+    }
+    return ok({ purchase: { ...req, origin_label }, items: items ?? [], quotes: quotes ?? [], orders: orders ?? [], events: named });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);

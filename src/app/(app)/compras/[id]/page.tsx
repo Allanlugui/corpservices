@@ -25,6 +25,7 @@ interface Purchase {
   rejection_reason: string | null;
   ticket_id: string | null;
   work_order_id: string | null;
+  origin_label: string | null;
   created_at: string;
 }
 interface Item {
@@ -54,7 +55,7 @@ interface Detail {
   items: Item[];
   quotes: Quote[];
   orders: Order[];
-  events: { event: string; from_status: string | null; to_status: string | null; created_at: string }[];
+  events: { event: string; from_status: string | null; to_status: string | null; actor_name: string; created_at: string }[];
 }
 
 const ADVANCE: Record<string, { label: string; to: string }[]> = {
@@ -167,12 +168,14 @@ function DetailInner({ id }: { id: string }) {
       <div className="mt-2">
         <PageHeader
           title={`Compra #${p.number}`}
-          description={`Origem ${p.origin === "TICKET" ? "cliente" : p.origin === "WORK_ORDER" ? "OS" : "manual"} · ${new Date(p.created_at).toLocaleString("pt-BR")}`}
+          description={`Origem ${p.origin === "TICKET" ? "cliente" : p.origin === "WORK_ORDER" ? "OS" : "manual"}${p.origin_label ? ` · ${p.origin_label}` : ""} · ${new Date(p.created_at).toLocaleString("pt-BR")}`}
           actions={<StatusBadge status={p.status} />}
         />
       </div>
       {p.rejection_reason ? (
-        <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-900">Rejeitada: {p.rejection_reason}</p>
+        <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-900">
+          Rejeitada{p.rejection_reason ? `: ${p.rejection_reason}` : ""} — por {events.find((e) => e.event === "REJEITADA")?.actor_name ?? "gestor"}.
+        </p>
       ) : null}
       <Tabs
         tabs={[
@@ -236,7 +239,7 @@ function DetailInner({ id }: { id: string }) {
                         <p className="font-semibold">{q.supplier} — {fmtMoney(q.amount_cents, q.currency)} {q.chosen ? "(escolhida)" : ""}</p>
                         {q.notes ? <p className="text-slate-600">{q.notes}</p> : null}
                         {!q.chosen ? (
-                          <Button variant="secondary" size="sm" onClick={() => void chooseQuote(q.id)} className="mt-2">Escolher</Button>
+                          <Button variant="secondary" size="sm" onClick={() => void chooseQuote(q.id)} className="mt-2">Escolher (gestor)</Button>
                         ) : null}
                       </li>
                     ))}
@@ -277,7 +280,7 @@ function DetailInner({ id }: { id: string }) {
             label: `Histórico (${events.length})`,
             content: (
               <Card title="Linha do tempo">
-                <Timeline items={events.map((e) => ({ title: `${e.event}${e.from_status ? ` (${e.from_status} → ${e.to_status})` : ""}`, at: e.created_at }))} />
+                <Timeline items={events.map((e) => ({ title: `${e.event}${e.from_status ? ` (${e.from_status} → ${e.to_status})` : ""} — por ${e.actor_name}`, at: e.created_at }))} />
               </Card>
             ),
           },

@@ -4,6 +4,7 @@ import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 import { transitionOs, type OsStatus } from "@/domain/os-states";
+import { resolveActors, withActorNames } from "@/lib/actors";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -58,14 +59,21 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     if (session.role === "tecnico" && wo.assigned_to !== session.userId) {
       return fail("FORBIDDEN", "OS atribuida a outro tecnico.", 403);
     }
-    const [{ data: pauses }, { data: checklist }, { data: materials }, { data: events }] =
+    const [{ data: pauses }, { data: checklist }, { data: materials }, { data: events }, { data: children }] =
       await Promise.all([
         admin.from("work_order_pauses").select("*").eq("work_order_id", id).order("paused_at", { ascending: true }),
         admin.from("work_order_checklists").select("*").eq("work_order_id", id).order("position"),
         admin.from("work_order_materials").select("*").eq("work_order_id", id).order("consumed_at"),
         admin.from("work_order_events").select("*").eq("work_order_id", id).order("created_at"),
+        admin.from("work_orders").select("id, number, title, status").eq("parent_work_order_id", id).order("number"),
       ]);
-    return ok({ work_order: wo, pauses: pauses ?? [], checklist: checklist ?? [], materials: materials ?? [], events: events ?? [] });
+    const named = withActorNames(events ?? [], await resolveActors((events ?? []).map((e) => e.actor_profile_id)));
+    let parent = null;
+    if (wo.parent_work_order_id) {
+      const { data: p } = await admin.from("work_orders").select("id, number, title, status").eq("id", wo.parent_work_order_id).single();
+      parent = p ?? null;
+    }
+    return ok({ work_order: wo, pauses: pauses ?? [], checklist: checklist ?? [], materials: materials ?? [], events: named, children: children ?? [], parent });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);
@@ -98,6 +106,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const from = wo.status as OsStatus;
     const action = parsed.data.action;
     const to = transitionOs(from, ACTION_TO[action]);
+    // OS filha aberta bloqueia conclusao/validacao/encerramento da pai.
+    if ((action === "complete" || action === "validate" || action === "close")) {
+      const { count } = await admin
+        .from("work_orders")
+        .select("id", { count: "exact", head: true })
+        .eq("parent_work_order_id", id)
+        .neq("status", "ENCERRADA");
+      if ((count ?? 0) > 0) {
+        return fail("BLOCKED_BY_CHILDREN", "Encerre as OS filhas antes de finalizar esta OS.", 422);
+      }
+    }
     const now = Date.now();
     const detail: Record<string, unknown> = { actor: session.email };
     const patch: Record<string, unknown> = { status: to, updated_at: new Date(now).toISOString() };
