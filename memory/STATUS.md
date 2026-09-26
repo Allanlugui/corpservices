@@ -50,6 +50,13 @@
 - E2E: árvore A CONCLUIDA (12 eventos, 1 pedido) · árvore B rejeição→reenvio→aprovação→recebimento→OS retomada e ENCERRADA.
 - Producao: API 200 (n=4) + UI nova no ar. FASE 06 CONCLUIDA.
 
+## FASE 07 — Estoque (CONCLUIDA, 2026-09-26)
+- Migration v6 (5 tabelas) + domínio + 34 testes.
+- APIs: produtos CRUD, movimentos com trava de saldo, entrada XML NF-e tolerante, alertas (6 tipos), métricas por período, fornecedores.
+- UI /estoque (alertas, filtros, métricas) + /estoque/novo (manual + XML) + detalhe 4 abas + /fornecedores.
+- E2E: entrada/saída/bloqueio/XML/alertas/métricas OK · produção API 200 n=3.
+- D-19: saída sem saldo bloqueia no servidor (nunca negativo).
+
 ## AJUSTE COMPRAS VIEWS (CONCLUIDO, 2026-09-26)
 - Solicitações: coluna Item (primeiro item + contador).
 - Cotações: agrupadas por compra + filtros (nº, fornecedor, escolhida/cotada).
@@ -63,13 +70,6 @@
 - Compras: submenu vira filtro (Solicitações/Cotações/Pedidos, API views); escolher cotação exige gestor (D-17); detalhe mostra origem legível (OS-000002 · título).
 - E2E: 9 verificações SIM · 29 testes · produção (views 200, team 200).
 - Fica p/ depois (confirmado): upload de fotos (Fase 08), e-mail/push (P-05).
-
-## FASE 06 — Compras (CONCLUIDA, 2026-09-26)
-- Migration v4 (5 tabelas, origem com CHECK) + domínio + 28 testes.
-- APIs: criar por ticket/OS/manual, 13 transições, cotar/escolher, aprovação só gestor, pedido auto na aprovação, RECEBIDA → COMPONENTE_RECEBIDO na OS, rejeição → COMPRA_REJEITADA (OS segue pausada).
-- UI /compras + detalhe 4 abas + criação a partir do ticket e da OS pausada.
-- E2E: árvore A CONCLUIDA (12 eventos, 1 pedido) · árvore B rejeição→reenvio→aprovação→recebimento→OS retomada e ENCERRADA.
-- Producao: API 200 (n=4) + UI nova no ar. FASE 06 CONCLUIDA.
 
 ## FASE 05 — Ordem de Serviço (CONCLUIDA, 2026-09-26)
 - [x] 05.1 Migration v3 aplicada (work_orders, pause_reasons + 8 seeds, pauses, checklists, materials, events)

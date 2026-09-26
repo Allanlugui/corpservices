@@ -101,3 +101,8 @@
 - Contexto: checklist pode exigir registro fotográfico, mas Storage com RLS só chega na Fase 08.
 - Escolha: flag `requires_photo` registrada e exibida; sem bloqueio de conclusão até o upload existir.
 - Reversao: baixa.
+
+## D-19 — Saldo nunca negativo (2026-09-26, Fase 07)
+- Contexto: saída sem saldo corromperia o estoque.
+- Escolha: `applyMovement` puro + bloqueio 422 no servidor; ajuste define saldo (auditável).
+- Reversao: baixa.

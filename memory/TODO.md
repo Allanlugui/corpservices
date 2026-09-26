@@ -74,7 +74,14 @@
 - [x] R5 Compras views + regra gestor + origem legivel
 - [x] R6 E2E 9 verificações + prod
 
-## FASES 07–12 [PLANEJADAS]
+## FASE 07 — Estoque [CONCLUIDA 2026-09-26]
+- [x] 07.1 Migration v6 aplicada (5 tabelas)
+- [x] 07.2 Domain + testes (34/34)
+- [x] 07.3 APIs (produtos, movimentos, XML, alertas, metricas, fornecedores)
+- [x] 07.4 UI /estoque + novo + detalhe + fornecedores
+- [x] 07.5 E2E + prod validados
+
+## FASES 08–12 [PLANEJADAS]
 - [ ] 07 Estoque (CRUD, NF/XML tolerante, validade, metricas)
 - [ ] 08 Arquivos (explorador por OS) + 09 Offline-first real + 10 BotIA LLM (opcional)
 - [ ] 11 ERP real (quando houver docs) + 12 Notificacoes/Dashboard/Metas/PDF/Auditoria/Relatorios/Backup honesto
