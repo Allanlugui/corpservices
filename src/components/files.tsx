@@ -124,6 +124,28 @@ export function FileList({ files, onDelete }: { files: FileRow[]; onDelete?: () 
     } else toast("Sem permissão para excluir.", "error");
   }
 
+  async function download(f: FileRow) {
+    if (!f.url) {
+      toast("Link indisponível.", "error");
+      return;
+    }
+    try {
+      const res = await fetch(f.url);
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = f.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+    } catch {
+      window.open(f.url, "_blank", "noopener");
+    }
+  }
+
   if (files.length === 0) return <p className="text-sm text-slate-500">Nenhum arquivo.</p>;
   return (
     <ul className="grid gap-2">
@@ -139,7 +161,12 @@ export function FileList({ files, onDelete }: { files: FileRow[]; onDelete?: () 
             <span className="block truncate font-medium">{f.name}</span>
             <span className="text-xs text-slate-500">{f.folder} · {(f.size_bytes / 1024).toFixed(0)} KB</span>
           </span>
-          {f.url ? <a href={f.url} target="_blank" rel="noreferrer" className="font-semibold text-brand-700 hover:underline">Abrir</a> : null}
+          {f.url ? <a href={f.url} target="_blank" rel="noreferrer" className="font-semibold text-brand-700 hover:underline">Visualizar</a> : null}
+          {f.url ? (
+            <button type="button" onClick={() => void download(f)} className="font-semibold text-brand-700 hover:underline">
+              Baixar
+            </button>
+          ) : null}
           <button type="button" onClick={() => void remove(f.id)} className="font-semibold text-red-700 hover:underline">
             Excluir
           </button>
