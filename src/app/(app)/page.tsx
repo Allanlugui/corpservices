@@ -12,9 +12,11 @@ import { Timeline } from "@/components/ui/timeline";
 import { useMe } from "@/hooks/useMe";
 
 interface DashboardData {
-  kpis: { novos: number; em_atendimento: number; resolvidos: number; convertidos: number };
+  kpis: { novos: number; em_atendimento: number; resolvidos: number; convertidos: number; os_abertas: number; compras_pendentes: number };
   recent: { id: string; number: number; kind: string; status: string; requester_name: string; created_at: string }[];
   activity: { event: string; created_at: string }[];
+  work_orders: { id: string; number: number; title: string; status: string }[];
+  purchases: { id: string; number: number; status: string }[];
 }
 
 function greeting(): string {
@@ -58,8 +60,8 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard label="Novos" value={String(data.kpis.novos)} hint="Aguardando triagem" />
             <StatCard label="Em atendimento" value={String(data.kpis.em_atendimento)} hint="Triagem + análise" />
-            <StatCard label="Resolvidos" value={String(data.kpis.resolvidos)} hint="Aguardando encerramento" />
-            <StatCard label="Convertidos" value={String(data.kpis.convertidos)} hint="Rumo a OS/compra" />
+            <StatCard label="OS abertas" value={String(data.kpis.os_abertas)} hint="Não encerradas" />
+            <StatCard label="Compras pendentes" value={String(data.kpis.compras_pendentes)} hint="Em andamento" />
           </div>
           <div className="mt-4 grid gap-4 xl:grid-cols-3">
             <Card
@@ -89,11 +91,38 @@ export default function DashboardPage() {
             </Card>
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <Card title="Ordens de Serviço">
-              <p className="text-sm text-slate-500">O ciclo de OS chega na Fase 05. Chamados convertidos aguardam aqui.</p>
+            <Card title="Ordens de Serviço" actions={<Link href="/os" className="text-sm font-semibold text-brand-700 hover:underline">Ver todas</Link>}>
+              {data.work_orders.length === 0 ? (
+                <p className="text-sm text-slate-500">Nenhuma OS. Chamados convertidos viram OS aqui.</p>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {data.work_orders.map((w) => (
+                    <li key={w.id}>
+                      <Link href={`/os/${w.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 hover:bg-slate-50">
+                        <span className="font-mono text-sm font-bold">OS-{String(w.number).padStart(6, "0")}</span>
+                        <StatusBadge status={w.status} />
+                        <span className="min-w-0 flex-1 truncate text-sm">{w.title}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Card>
-            <Card title="Compras">
-              <p className="text-sm text-slate-500">Solicitações, cotações e aprovações chegam na Fase 06.</p>
+            <Card title="Compras" actions={<Link href="/compras" className="text-sm font-semibold text-brand-700 hover:underline">Ver todas</Link>}>
+              {data.purchases.length === 0 ? (
+                <p className="text-sm text-slate-500">Nenhuma solicitação.</p>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {data.purchases.map((p) => (
+                    <li key={p.id}>
+                      <Link href={`/compras/${p.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 hover:bg-slate-50">
+                        <span className="font-mono text-sm font-bold">#{p.number}</span>
+                        <StatusBadge status={p.status} />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Card>
           </div>
         </>

@@ -115,6 +115,7 @@ function ChamadosInner({ initialTab }: { initialTab: Tab }) {
         <>
           <DataTable
             caption="Lista de chamados"
+            rowHref={(t) => `/chamados/${t.id}`}
             columns={[
               { key: "number", header: "Protocolo", render: (t) => <Link href={`/chamados/${t.id}`} className="font-mono font-bold hover:underline">#{t.number}</Link> },
               { key: "status", header: "Status", render: (t) => <StatusBadge status={t.status} /> },

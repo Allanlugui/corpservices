@@ -134,6 +134,7 @@ export default function EstoquePage() {
         <>
           <DataTable
             caption="Lista de produtos"
+            rowHref={(p) => `/estoque/${p.id}`}
             columns={[
               { key: "name", header: "Produto", render: (p) => <span><Link href={`/estoque/${p.id}`} className="font-medium hover:underline">{p.name}</Link>{p.cadastro_incompleto ? <Badge tone="pending"> incompleto</Badge> : null}</span> },
               { key: "qty", header: "Saldo", render: (p) => <span className="font-mono font-bold">{p.quantity} {p.unit}</span> },

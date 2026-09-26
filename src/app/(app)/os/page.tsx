@@ -85,6 +85,7 @@ export default function OSPage() {
         <>
           <DataTable
             caption="Lista de ordens de serviço"
+            rowHref={(t) => `/os/${t.id}`}
             columns={[
               { key: "number", header: "OS", render: (t) => <Link href={`/os/${t.id}`} className="font-mono font-bold hover:underline">OS-{String(t.number).padStart(6, "0")}</Link> },
               { key: "title", header: "Título", render: (t) => <span className="font-medium">{t.title}</span> },

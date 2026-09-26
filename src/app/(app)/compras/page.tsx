@@ -236,6 +236,7 @@ function ComprasInner({ initialView }: { initialView: View }) {
         <>
           <DataTable
             caption="Lista de compras"
+            rowHref={(t) => `/compras/${t.id}`}
             columns={[
               { key: "number", header: "Nº", render: (t) => <Link href={`/compras/${t.id}`} className="font-mono font-bold hover:underline">#{t.number}</Link> },
               { key: "item", header: "Item", render: (t) => <span className="font-medium">{t.first_item}{t.items_count > 1 ? <span className="text-slate-500"> +{t.items_count - 1}</span> : null}</span> },

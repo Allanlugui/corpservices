@@ -21,6 +21,8 @@ const productSchema = z.object({
   manufacturer: z.string().trim().max(120).optional(),
   warranty_months: z.number().int().min(0).max(240).optional(),
   support_months: z.number().int().min(0).max(240).optional(),
+  ncm: z.string().trim().max(20).optional(),
+  weight_kg: z.number().min(0).max(1000000).optional(),
   notes: z.string().trim().max(2000).default(""),
 });
 
@@ -93,6 +95,8 @@ export async function POST(request: Request) {
         manufacturer: parsed.data.manufacturer ?? null,
         warranty_months: parsed.data.warranty_months ?? null,
         support_months: parsed.data.support_months ?? null,
+        ncm: parsed.data.ncm ?? null,
+        weight_kg: parsed.data.weight_kg ?? null,
         notes: parsed.data.notes,
         cadastro_incompleto: missing.length > 0,
       })

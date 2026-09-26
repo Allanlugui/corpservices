@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
-import { applyMovement } from "@/domain/inventory";
+import { applyMovement, incompleteFields } from "@/domain/inventory";
 import { resolveActors, withActorNames } from "@/lib/actors";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
@@ -26,7 +26,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     }
     const { id } = paramsSchema.parse(await params);
     const admin = createAdminClient();
-    const { data: product, error } = await admin.from("products").select("*").eq("id", id).eq("org_id", session.orgId).single();
+    const { data: product, error } = await admin.from("products").select("*, product_categories(name), suppliers(name)").eq("id", id).eq("org_id", session.orgId).single();
     if (error || !product) return fail("NOT_FOUND", "Produto nao encontrado.", 404);
     const [{ data: batches }, { data: movements }] = await Promise.all([
       admin.from("product_batches").select("*").eq("product_id", id).order("expires_at", { ascending: true, nullsFirst: false }),
@@ -50,16 +50,53 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body = await request.json().catch(() => null);
     const parsed = z.object({
       name: z.string().trim().min(1).max(160).optional(),
+      description: z.string().trim().max(2000).optional(),
+      unit: z.string().trim().min(1).max(20).optional(),
+      category: z.string().trim().max(80).nullable().optional(),
+      supplier_id: z.string().uuid().nullable().optional(),
       location: z.string().trim().max(120).nullable().optional(),
       stock_min: z.number().min(0).optional(),
       stock_max: z.number().min(0).optional(),
       cost_cents: z.number().int().min(0).optional(),
+      sku: z.string().trim().max(60).nullable().optional(),
+      internal_code: z.string().trim().max(60).nullable().optional(),
+      barcode: z.string().trim().max(60).nullable().optional(),
+      manufacturer: z.string().trim().max(120).nullable().optional(),
+      warranty_months: z.number().int().min(0).max(240).nullable().optional(),
+      support_months: z.number().int().min(0).max(240).nullable().optional(),
+      ncm: z.string().trim().max(20).nullable().optional(),
+      weight_kg: z.number().min(0).max(1000000).nullable().optional(),
       notes: z.string().trim().max(2000).optional(),
       active: z.boolean().optional(),
     }).safeParse(body);
     if (!parsed.success) return fail("VALIDATION", "Campos invalidos.", 422);
     const admin = createAdminClient();
-    const { data, error } = await admin.from("products").update(parsed.data).eq("id", id).eq("org_id", session.orgId).select("id").single();
+    const { category, supplier_id, ...rest } = parsed.data;
+    const update: Record<string, unknown> = { ...rest };
+    if (category !== undefined) {
+      if (!category) update["category_id"] = null;
+      else {
+        const { data: cat } = await admin.from("product_categories").select("id").eq("org_id", session.orgId).eq("name", category).maybeSingle();
+        if (cat) update["category_id"] = cat.id;
+        else {
+          const { data: created } = await admin.from("product_categories").insert({ org_id: session.orgId, name: category }).select("id").single();
+          update["category_id"] = created?.id ?? null;
+        }
+      }
+    }
+    if (supplier_id !== undefined) update["supplier_id"] = supplier_id;
+    // Recalcula pendência de cadastro após a edição.
+    const { data: current } = await admin.from("products").select("name, unit, cost_cents").eq("id", id).eq("org_id", session.orgId).single();
+    if (current) {
+      const missing = incompleteFields({
+        name: (update["name"] as string) ?? (current.name as string),
+        unit: (update["unit"] as string) ?? (current.unit as string),
+        category: category === undefined ? undefined : (category ?? ""),
+        cost: (update["cost_cents"] as number) ?? (current.cost_cents as number),
+      });
+      update["cadastro_incompleto"] = missing.length > 0;
+    }
+    const { data, error } = await admin.from("products").update(update).eq("id", id).eq("org_id", session.orgId).select("id").single();
     if (error || !data) return fail("NOT_FOUND", "Produto nao encontrado.", 404);
     return ok({ id: data.id });
   } catch (e) {
