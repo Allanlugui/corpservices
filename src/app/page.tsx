@@ -13,12 +13,12 @@ export default function Home() {
       <PageHeader
         title="Painel operacional"
         description="Visão factual do estado da plataforma. Nenhum número aqui é mockado: enquanto os módulos não existirem, o painel mostra o estado da fundação."
-        actions={<Badge tone="pending">FASE 01 · FUNDAÇÃO</Badge>}
+        actions={<Badge tone="pending">FASE 03 · TICKETS</Badge>}
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Fase atual" value="01 — Fundação" hint="App navegável, sem backend" />
-        <StatCard label="Módulos funcionais" value="0 de 8" hint="Todos PENDENTES, sem fake" />
-        <StatCard label="Integrações ativas" value="0 de 5" hint="Ver /api/health" />
+        <StatCard label="Fase atual" value="03 — Tickets" hint="Portal público no ar" />
+        <StatCard label="Módulos funcionais" value="1 de 8" hint="Solicitar; demais PENDENTES" />
+        <StatCard label="Integrações ativas" value="1 de 5" hint="Supabase; ver /api/health" />
       </div>
       <h2 className="mb-3 mt-8 text-lg font-bold">Integrações</h2>
       <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">

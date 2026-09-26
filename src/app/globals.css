@@ -12,15 +12,6 @@
   --font-mono: ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+/* Nota: sem regras `body` fora de camada — em Tailwind v4, CSS sem @layer
+   vence as utilities e quebrava o tema (fundo preto, texto invisivel).
+   Cores vem das classes Tailwind. Dark-mode completo: apos as fases funcionais. */
