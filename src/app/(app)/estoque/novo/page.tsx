@@ -28,6 +28,7 @@ export default function NovoProdutoPage() {
     }[];
   }>(null);
   const [review, setReview] = useState<Record<number, { name: string; quantity: string; use_existing: string }>>({});
+  const [rawXml, setRawXml] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/fornecedores")
@@ -70,6 +71,7 @@ export default function NovoProdutoPage() {
     setXmlResult(null);
     try {
       const xml = await file.text();
+      setRawXml(xml);
       // M-01: prévia para revisão antes de lançar.
       const res = await fetch("/api/estoque/xml-preview", {
         method: "POST",
@@ -114,7 +116,7 @@ export default function NovoProdutoPage() {
       const res = await fetch("/api/estoque/xml-confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items, xml: rawXml }),
       });
       const json = await res.json();
       if (!res.ok || json.error) {

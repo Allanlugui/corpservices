@@ -45,6 +45,7 @@ export function FileUploader({
   folders = [...FOLDERS],
   accept = "image/jpeg,image/png,image/webp,application/pdf",
   label = "Enviar arquivo",
+  pasteHint = false,
   onUploaded,
 }: {
   ownerType: string;
@@ -53,6 +54,7 @@ export function FileUploader({
   folders?: string[];
   accept?: string;
   label?: string;
+  pasteHint?: boolean;
   onUploaded?: () => void;
 }) {
   const toast = useToast();
@@ -95,9 +97,18 @@ export function FileUploader({
           accept={accept}
           disabled={busy}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void send(f); e.target.value = ""; }}
+          onPaste={(e) => {
+            const item = [...e.clipboardData.items].find((i) => i.type.startsWith("image/"));
+            const file = item?.getAsFile();
+            if (file) {
+              e.preventDefault();
+              void send(new File([file], `colado-${Date.now()}.png`, { type: file.type }));
+            }
+          }}
           className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:font-semibold file:text-white"
         />
       </label>
+      {pasteHint ? <p className="text-xs text-slate-500">Dica: Ctrl+C numa imagem/planilha e Ctrl+V aqui para anexar.</p> : null}
     </div>
   );
 }

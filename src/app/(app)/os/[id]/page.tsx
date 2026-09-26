@@ -375,6 +375,12 @@ function DetailInner({ id }: { id: string }) {
                       </Select>
                     )}
                   </div>
+                  {(wo.status === "ABERTA" || wo.status === "ATRIBUIDA") && (
+                    <div className="mt-3 border-t border-slate-100 pt-3">
+                      <p className="mb-2 text-sm font-semibold">Documentos da designação</p>
+                      <FileUploader ownerType="work_order" ownerId={id} folder="documentos" folders={["documentos"]} accept="image/jpeg,image/png,image/webp,application/pdf" label="APT, APR, foto ou print" pasteHint onUploaded={() => load()} />
+                    </div>
+                  )}
                 </Card>
               </div>
             ),

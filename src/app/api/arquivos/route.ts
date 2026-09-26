@@ -40,10 +40,28 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const ownerType = url.searchParams.get("owner_type") ?? "";
     const ownerId = url.searchParams.get("owner_id") ?? "";
+    const folderOnly = url.searchParams.get("folder") ?? "";
+    const admin = createAdminClient();
+    if (folderOnly && !ownerType) {
+      // Visão transversal (ex.: todas as notas fiscais da org).
+      const { data: files } = await admin
+        .from("files")
+        .select("id, owner_type, owner_id, folder, path, name, mime, size_bytes, created_at")
+        .eq("org_id", session.orgId)
+        .eq("folder", folderOnly)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      const withUrls = await Promise.all(
+        (files ?? []).map(async (f) => {
+          const { data } = await admin.storage.from("attachments").createSignedUrl(f.path as string, 3600);
+          return { ...f, url: data?.signedUrl ?? null };
+        }),
+      );
+      return ok({ files: withUrls });
+    }
     if (!OWNER_TABLE[ownerType] && ownerType !== "checklist_item") {
       return fail("VALIDATION", "owner invalido.", 422);
     }
-    const admin = createAdminClient();
     const { data: files } = await admin
       .from("files")
       .select("id, owner_type, owner_id, folder, path, name, mime, size_bytes, created_at")

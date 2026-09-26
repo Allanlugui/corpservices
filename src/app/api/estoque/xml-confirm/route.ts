@@ -22,15 +22,29 @@ const itemSchema = z.object({
   issuer: z.string().trim().max(160).default("NF-e"),
 });
 
+const confirmSchema = z.object({
+  items: z.array(itemSchema).min(1).max(200),
+  xml: z.string().min(50).max(2_000_000).optional(),
+});
+
 export async function POST(request: Request) {
   try {
     const session = await requireProfile();
     if (!can(session.role, "inventory", "update")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
-    const parsed = z.object({ items: z.array(itemSchema).min(1).max(200) }).safeParse(await request.json().catch(() => null));
+    const parsed = confirmSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return fail("VALIDATION", "Itens invalidos.", 422);
     const admin = createAdminClient();
+    // F-02: o XML original é salvo como arquivo e vinculado ao primeiro produto.
+    let xmlPath: string | null = null;
+    if (parsed.data.xml) {
+      xmlPath = `${session.orgId}/nota_fiscal_xml/${crypto.randomUUID()}.xml`;
+      await admin.storage.from("attachments").upload(xmlPath, new TextEncoder().encode(parsed.data.xml), {
+        contentType: "text/xml",
+        upsert: false,
+      });
+    }
     const result: { name: string; action: "movimentado" | "criado"; quantity: number; cadastro_incompleto: boolean }[] = [];
     for (const item of parsed.data.items) {
       if (item.product_id) {
@@ -80,7 +94,30 @@ export async function POST(request: Request) {
         result.push({ name: item.name, action: "criado", quantity: item.quantity, cadastro_incompleto: missing.length > 0 });
       }
     }
-    return ok({ items: result }, 201);
+    if (xmlPath) {
+      const { data: firstCreated } = await admin
+        .from("products")
+        .select("id")
+        .eq("org_id", session.orgId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const firstId = (firstCreated as { id: string } | null)?.id;
+      if (firstId) {
+        await admin.from("files").insert({
+          org_id: session.orgId,
+          owner_type: "product",
+          owner_id: firstId,
+          folder: "nota_fiscal",
+          path: xmlPath,
+          name: `nfe-${new Date().toISOString().slice(0, 10)}.xml`,
+          mime: "text/xml",
+          size_bytes: parsed.data.xml?.length ?? 0,
+          uploaded_by: session.userId,
+        });
+      }
+    }
+    return ok({ items: result, xml_saved: !!xmlPath }, 201);
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);

@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/fields";
 import { LoadingState } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
-import { FileList, FileUploader, useFiles } from "@/components/files";
+import { FileList, useFiles } from "@/components/files";
 
 interface Wo {
   id: string;
@@ -14,7 +14,7 @@ interface Wo {
   title: string;
 }
 
-/** Explorador documental por OS: Antes / Durante / Depois / Documentos. */
+/** Explorador somente-leitura (F-01): envio acontece nas entidades (OS, compra, produto). */
 export default function ArquivosPage() {
   const [orders, setOrders] = useState<Wo[]>([]);
   const [osId, setOsId] = useState("");
@@ -44,7 +44,7 @@ export default function ArquivosPage() {
 
   return (
     <section>
-      <PageHeader title="Arquivos" description="Explorador documental por ordem de serviço." />
+      <PageHeader title="Arquivos" description="Explorador documental (somente leitura). O envio acontece dentro de cada OS, compra ou produto." />
       {loading ? (
         <LoadingState label="Carregando ordens…" />
       ) : error ? (
@@ -72,17 +72,31 @@ export default function ArquivosPage() {
             {!current ? (
               <Card title="Nenhuma OS"><p className="text-sm text-slate-500">Selecione uma OS.</p></Card>
             ) : (
-              <>
-                <Card title={`OS-${String(current.number).padStart(6, "0")} · enviar`}>
-                  <FileUploader ownerType="work_order" ownerId={current.id} folders={["antes", "durante", "depois", "documentos"]} />
-                </Card>
-                <OsFiles osId={current.id} />
-              </>
+              <OsFiles osId={current.id} />
             )}
+            <NfFiles />
           </div>
         </div>
       )}
     </section>
+  );
+}
+
+function NfFiles() {
+  const [files, setFiles] = useState<{ id: string; name: string; mime: string; size_bytes: number; folder: string; url: string | null; created_at: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/arquivos?folder=nota_fiscal")
+      .then(async (r) => {
+        const j = await r.json();
+        if (!j.error) setFiles(j.data.files);
+      })
+      .catch(() => {});
+  }, []);
+  if (files.length === 0) return null;
+  return (
+    <Card title="Notas fiscais (todas as origens)">
+      <FileList files={files} />
+    </Card>
   );
 }
 

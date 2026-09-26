@@ -14,6 +14,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { LoadingState } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
+import { FileList, FileUploader, useFiles } from "@/components/files";
 
 interface Purchase {
   id: string;
@@ -276,6 +277,11 @@ function DetailInner({ id }: { id: string }) {
             ),
           },
           {
+            id: "nf",
+            label: "Nota fiscal",
+            content: <PurchaseNf purchaseId={id} />,
+          },
+          {
             id: "historico",
             label: `Histórico (${events.length})`,
             content: (
@@ -300,6 +306,21 @@ function DetailInner({ id }: { id: string }) {
         />
       ) : null}
     </section>
+  );
+}
+
+function PurchaseNf({ purchaseId }: { purchaseId: string }) {
+  const { files, reload } = useFiles("purchase", purchaseId);
+  return (
+    <div className="grid gap-4">
+      <Card title="Anexar NF (física ou por e-mail)">
+        <FileUploader ownerType="purchase" ownerId={purchaseId} folder="nota_fiscal" folders={["nota_fiscal", "documentos"]} accept="image/jpeg,image/png,image/webp,application/pdf,text/xml" label="Nota fiscal ou XML" pasteHint onUploaded={reload} />
+        <p className="mt-2 text-xs text-slate-500">A NF fica amarrada a esta compra para auditoria; XML importado no estoque também aparece nos Arquivos.</p>
+      </Card>
+      <Card title="Documentos vinculados">
+        <FileList files={files} onDelete={reload} />
+      </Card>
+    </div>
   );
 }
 
