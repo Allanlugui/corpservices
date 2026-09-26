@@ -106,3 +106,8 @@
 - Contexto: saída sem saldo corromperia o estoque.
 - Escolha: `applyMovement` puro + bloqueio 422 no servidor; ajuste define saldo (auditável).
 - Reversao: baixa.
+
+## D-20 — Storage sem acesso direto + upload operacional (2026-09-26, Fase 08)
+- Contexto: fotos de campo por técnico/estoque sem vazar entre orgs.
+- Escolha: bucket privado sem policies diretas (default deny) + signed URLs via servidor; upload operacional (files:create), exclusão só gestor/admin.
+- Reversao: baixa.

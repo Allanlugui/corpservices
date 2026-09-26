@@ -88,10 +88,11 @@
 - [x] D4 XML por arquivo + fornecedor auto
 - [x] D5 Gates + E2E + prod + pontas soltas auditadas
 
-## FASE 08 — Arquivos [PROXIMA]
-- [ ] Storage bucket + RLS + explorador por OS + foto do checklist
-- [ ] M-01 Revisão de XML antes de lançar: escolher arquivo → extrair itens → tela de revisão editável (corrige campos) → lançamento em lote de uma vez
-- [ ] M-02 Deduplicação no XML: cruzar referências (nome, barras, SKU, fornecedor) → perguntar "é o mesmo produto?" → se sim, só movimenta quantidade + histórico (data, ator, NF); se não, cria novo
+## FASE 08 — Arquivos [CONCLUIDA 2026-09-26]
+- [x] Storage bucket privado + files + APIs
+- [x] Explorador + aba OS + foto checklist + enforcement
+- [x] M-01 revisao XML + M-02 dedupe
+- [x] E2E + prod
 
 ## FASES 09–12 [PLANEJADAS]
 - [ ] 09 Offline-first real (fila/outbox/sync — hoje só indicador)
