@@ -81,7 +81,15 @@
 - [x] 07.4 UI /estoque + novo + detalhe + fornecedores
 - [x] 07.5 E2E + prod validados
 
-## FASES 08–12 [PLANEJADAS]
+## AJUSTES DASHBOARD/TABELAS/ESTOQUE [CONCLUIDO 2026-09-26]
+- [x] D1 Dashboard real OS/compras
+- [x] D2 Linha clicavel nas 4 tabelas
+- [x] D3 CRUD produto + NCM/peso + form espelho
+- [x] D4 XML por arquivo + fornecedor auto
+- [x] D5 Gates + E2E + prod + pontas soltas auditadas
+
+## FASE 08 — Arquivos [PROXIMA]
+- [ ] Storage bucket + RLS + explorador por OS + foto do checklist
 - [ ] 07 Estoque (CRUD, NF/XML tolerante, validade, metricas)
 - [ ] 08 Arquivos (explorador por OS) + 09 Offline-first real + 10 BotIA LLM (opcional)
 - [ ] 11 ERP real (quando houver docs) + 12 Notificacoes/Dashboard/Metas/PDF/Auditoria/Relatorios/Backup honesto

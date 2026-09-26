@@ -57,6 +57,22 @@
 - E2E: entrada/saída/bloqueio/XML/alertas/métricas OK · produção API 200 n=3.
 - D-19: saída sem saldo bloqueia no servidor (nunca negativo).
 
+## AJUSTES DASHBOARD/TABELAS/ESTOQUE (CONCLUIDO, 2026-09-26)
+- Dashboard real (OS + compras, sem placeholders de fase).
+- Linha inteira clicável nas 4 tabelas (mouse + teclado).
+- CRUD produto completo (aba Editar espelho, 18 campos, NCM/peso, pendência recalculada).
+- XML por arquivo + fornecedor auto (nome + CNPJ) + lote em massa.
+- E2E ajustes OK · deploy READY.
+
+## PONTAS SOLTAS — auditoria honesta (2026-09-26)
+Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
+- FASE 08 Arquivos: upload real (Storage+RLS), explorador por OS, foto do checklist.
+- FASE 09 Offline: só indicador; falta fila/outbox/sync.
+- FASE 10 BotIA LLM: só determinístico.
+- FASE 11 ERP: pendente de docs.
+- FASE 12: notificações, metas, PDF, auditoria hash-chain, relatórios export, backup honesto, dashboards por perfil (só há 1), área de configurações (motivos, SLAs).
+- E-mail/push: sem provedor (P-05).
+
 ## AJUSTE COMPRAS VIEWS (CONCLUIDO, 2026-09-26)
 - Solicitações: coluna Item (primeiro item + contador).
 - Cotações: agrupadas por compra + filtros (nº, fornecedor, escolhida/cotada).
