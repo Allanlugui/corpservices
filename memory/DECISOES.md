@@ -66,8 +66,15 @@
 - Reversao: baixa.
 
 ## D-12 — PDF server-side, backup via provedor (2026-09-26, Fase 00)
+- Contexto: Vercel sem filesystem persistente; "backup completo" falso e proibido.
+- Escolha: PDFs por stream/download; backup = mecanismos oficiais Supabase; app so exporta CSV/PDF.
+- Reversao: baixa.
 
 ## D-13 — Next.js 16 via template oficial (2026-09-26, Fase 01)
+- Contexto: `create-next-app@latest` entrega Next 16.3.6 + Tailwind v4 (D-01 previa v15).
+- Escolha: aceitar a versao do template; dois ajustes manuais (`LayoutProps` removido → `ReactNode` explicito; `Badge` children `ReactNode`).
+- Motivo: acompanhar o template reduz divergencia futura; nada do plano depende de v15 especifica.
+- Reversao: baixa.
 
 ## D-14 — AppShell + route groups + case-sensitivity (2026-09-26, correção UI/UX)
 - Contexto: conteúdo comprimido, sem sidebar, portal público vendo navegação interna, dashboard estático.
@@ -84,17 +91,13 @@
 - Contexto: plano exige notificação e retorno da OS ao receber componente.
 - Escolha: RECEBIDA gera `COMPONENTE_RECEBIDO` na OS (+pedido RECEBIDO); técnico retoma manualmente (SLA segue congelado até lá). Sem tabela de notificações ainda (Fase 12).
 - Reversao: baixa.
-- Contexto: plano §25 lista RETOMADA entre estados; status persistido duplicaria EM_EXECUCAO e complicaria o SLA.
-- Escolha: transição PAUSADA→EM_EXECUCAO com evento RETOMADA (duração e SLA registrados na pausa).
+
+## D-17 — Cotar é operacional, escolher é do gestor (2026-09-26, revisão)
+- Contexto: quem cadastra fornecedor vs quem decide.
+- Escolha: `purchases:update` (comprador, estoque, técnico, gestor) cadastra cotações; `purchases:approve` (gestor, admin) escolhe a vencedora e aprova/rejeita.
 - Reversao: baixa.
-- Contexto: conteúdo comprimido, sem sidebar, portal público vendo navegação interna, dashboard estático.
-- Escolha: `(public)` (login, solicitar) × `(app)` (AppShell: Sidebar + Header + main max-w-7xl); sidebar filtrada por `can(role)`; dashboard com KPIs reais de `/api/dashboard`; 20 primitivas de design system sem nova lib visual além de `lucide-react`.
-- Incidente: imports `@/components/ui/badge` vs arquivo `Badge.tsx` quebraram o build no Linux (case-sensitive). Fix: rename para minúsculas; padrão: arquivos sempre minúsculos.
-- Reversao: baixa (só apresentação; APIs e banco intactos).
-- Contexto: `create-next-app@latest` entrega Next 16.3.6 + Tailwind v4 (D-01 previa v15).
-- Escolha: aceitar a versao do template; dois ajustes manuais (`LayoutProps` removido → `ReactNode` explicito; `Badge` children `ReactNode`).
-- Motivo: acompanhar o template reduz divergencia futura; nada do plano depende de v15 especifica.
-- Reversao: baixa.
-- Contexto: Vercel sem filesystem persistente; "backup completo" falso e proibido.
-- Escolha: PDFs por stream/download; backup = mecanismos oficiais Supabase; app so exporta CSV/PDF.
+
+## D-18 — Foto obrigatória sem bloqueio até a Fase 08 (2026-09-26, revisão)
+- Contexto: checklist pode exigir registro fotográfico, mas Storage com RLS só chega na Fase 08.
+- Escolha: flag `requires_photo` registrada e exibida; sem bloqueio de conclusão até o upload existir.
 - Reversao: baixa.
