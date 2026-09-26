@@ -49,13 +49,13 @@
 ## CORREÇÃO UI/UX [CONCLUIDA 2026-09-26]
 - [x] UX.1–UX.6 (auditoria, AppShell, design system, migração, RBAC/responsivo, gates+prod)
 
-## FASE 05 — Ordem de Servico [EM ANDAMENTO]
+## FASE 05 — Ordem de Servico [CONCLUIDA 2026-09-26]
 - [x] 05.1 Migration v3 aplicada (6 tabelas + 8 motivos)
 - [x] 05.2 Domain: estados OS + SLA deterministico + testes (25/25)
 - [x] 05.3 APIs OS completas
 - [x] 05.4 UI /os + /os/[id]
 - [x] 05.5 E2E ciclo completo validado (SLA congelado SIM)
-- [ ] 05.6 Push + producao + memoria final
+- [x] 05.6 Push + producao + memoria final
 - Nota: compra vinculada a OS (pausa por falta de componente) chega na FASE 06.
 
 ## FASES 06–12 [PLANEJADAS — detalhadas apos Fase 05]

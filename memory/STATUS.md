@@ -50,3 +50,4 @@
 - [x] 05.4 UI /os (tabela + SLA) + /os/[id] (4 abas + timeline + pausas)
 - [x] 05.5 E2E ciclo completo: OS #1 ticket#4 → ENCERRADA, 8 eventos, pausa 7781ms, SLA congelado SIM
 - Falta: commit/push/prod desta etapa + compra vinculada a OS (aguarda Fase 06).
+- Producao: API /api/os 200 (n=1) + /os com UI nova no ar. FASE 05 CONCLUIDA.
