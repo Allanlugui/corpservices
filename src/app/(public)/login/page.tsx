@@ -27,6 +27,11 @@ function LoginForm() {
         setError("Credenciais inválidas ou usuário inexistente.");
         return;
       }
+      await fetch("/api/auditoria/acesso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: "LOGIN" }),
+      }).catch(() => {});
       router.push(searchParams.get("next") ?? "/");
       router.refresh();
     } finally {

@@ -83,6 +83,7 @@ const GRANTS: Record<Role, Grant[]> = {
     "inventory:read",
     "files:read",
     "reports:read",
+    "settings:read",
     "audit:read",
   ],
 };

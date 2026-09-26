@@ -6,7 +6,6 @@ import {
   Home,
   Package,
   Settings,
-  ShieldCheck,
   ShoppingCart,
   Target,
   Truck,
@@ -53,7 +52,6 @@ export const NAV: NavItem[] = [
   { href: "/relatorios", label: "Relatórios", icon: FileText, perm: { module: "reports", action: "read" } },
   { href: "/metas", label: "Metas", icon: Target, perm: { module: "reports", action: "read" } },
   { href: "/notificacoes", label: "Notificações", icon: Bell, perm: { module: "tickets", action: "read" } },
-  { href: "/auditoria", label: "Auditoria", icon: ShieldCheck, perm: { module: "audit", action: "read" } },
   { href: "/configuracoes", label: "Configurações", icon: Settings, perm: { module: "settings", action: "read" } },
   { href: "/fornecedores", label: "Fornecedores", icon: Truck, perm: { module: "inventory", action: "read" } },
 ];

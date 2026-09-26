@@ -10,7 +10,7 @@ import { resolveActors } from "@/lib/actors";
  * Agrega eventos de tickets, OS, compras e estoque para diagnóstico.
  */
 const querySchema = z.object({
-  entity: z.enum(["tickets", "os", "compras", "estoque", "todas"]).default("todas"),
+  entity: z.enum(["tickets", "os", "compras", "estoque", "acesso", "todas"]).default("todas"),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   search: z.string().max(120).optional(),
 });
@@ -64,6 +64,14 @@ export async function GET(request: Request) {
         if (search && !((r.kind as string) + det).toLowerCase().includes(search.toLowerCase())) continue;
         if (r.actor_profile_id) actorIds.push(r.actor_profile_id as string);
         out.push({ id: r.id as string, at: r.created_at as string, entidade: "estoque", evento: r.kind as string, detalhe: det, actor: r.actor_profile_id as string ?? "" });
+      }
+    }
+    if (entity === "todas" || entity === "acesso") {
+      const { data } = await admin.from("audit_events").select("id, created_at, event, user_id").eq("org_id", session.orgId).order("created_at", { ascending: false }).limit(limit);
+      for (const r of data ?? []) {
+        if (search && !(r.event as string).toLowerCase().includes(search.toLowerCase())) continue;
+        if (r.user_id) actorIds.push(r.user_id as string);
+        out.push({ id: r.id as string, at: r.created_at as string, entidade: "acesso", evento: r.event as string, detalhe: "", actor: r.user_id as string ?? "" });
       }
     }
     const actors = await resolveActors(actorIds);
