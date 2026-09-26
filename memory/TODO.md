@@ -58,6 +58,14 @@
 - [x] 05.6 Push + producao + memoria final
 - Nota: compra vinculada a OS (pausa por falta de componente) chega na FASE 06.
 
+## FASE 06 — Compras [CONCLUIDA 2026-09-26]
+- [x] 06.1 Migration v4 aplicada (5 tabelas, origem com CHECK)
+- [x] 06.2 Domain purchase-states + testes (28/28)
+- [x] 06.3 APIs (ciclo, cotacoes, recebimento + evento OS)
+- [x] 06.4 UI /compras + detalhe 4 abas + botoes de origem
+- [x] 06.5 E2E duas arvores validado
+- [ ] 06.6 Push + producao + memoria final
+
 ## FASES 06–12 [PLANEJADAS — detalhadas apos Fase 05]
 - [ ] 06 Compras (duas arvores) + cotacao/aprovacao/pagamento/recebimento
 - [ ] 07 Estoque (CRUD, NF/XML tolerante, validade, metricas)

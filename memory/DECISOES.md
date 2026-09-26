@@ -79,6 +79,14 @@
 - Contexto: plano §25 lista RETOMADA entre estados; status persistido duplicaria EM_EXECUCAO e complicaria o SLA.
 - Escolha: transição PAUSADA→EM_EXECUCAO com evento RETOMADA (duração e SLA registrados na pausa).
 - Reversao: baixa.
+
+## D-16 — Recebimento avisa a OS; retomada é do técnico (2026-09-26, Fase 06)
+- Contexto: plano exige notificação e retorno da OS ao receber componente.
+- Escolha: RECEBIDA gera `COMPONENTE_RECEBIDO` na OS (+pedido RECEBIDO); técnico retoma manualmente (SLA segue congelado até lá). Sem tabela de notificações ainda (Fase 12).
+- Reversao: baixa.
+- Contexto: plano §25 lista RETOMADA entre estados; status persistido duplicaria EM_EXECUCAO e complicaria o SLA.
+- Escolha: transição PAUSADA→EM_EXECUCAO com evento RETOMADA (duração e SLA registrados na pausa).
+- Reversao: baixa.
 - Contexto: conteúdo comprimido, sem sidebar, portal público vendo navegação interna, dashboard estático.
 - Escolha: `(public)` (login, solicitar) × `(app)` (AppShell: Sidebar + Header + main max-w-7xl); sidebar filtrada por `can(role)`; dashboard com KPIs reais de `/api/dashboard`; 20 primitivas de design system sem nova lib visual além de `lucide-react`.
 - Incidente: imports `@/components/ui/badge` vs arquivo `Badge.tsx` quebraram o build no Linux (case-sensitive). Fix: rename para minúsculas; padrão: arquivos sempre minúsculos.

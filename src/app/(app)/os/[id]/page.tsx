@@ -79,6 +79,65 @@ const ACTIONS: Record<string, { label: string; action: string; extra?: Record<st
   ENCERRADA: [],
 };
 
+function NewPurchaseFromOs({
+  workOrderId,
+  pauseReason,
+  onCreated,
+}: {
+  workOrderId: string;
+  pauseReason: string;
+  onCreated: () => void;
+}) {
+  const toast = useToast();
+  const [item, setItem] = useState("");
+  const [quantity, setQuantity] = useState("1");
+  const [busy, setBusy] = useState(false);
+
+  async function create() {
+    if (!item.trim()) {
+      toast("Informe o componente.", "error");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/compras", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          origin: "os",
+          work_order_id: workOrderId,
+          justification: `OS pausada: ${pauseReason}. Componente: ${item.trim()}`,
+          items: [{ item: item.trim(), quantity: Number(quantity) || 1 }],
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Não foi possível criar.", "error");
+      else {
+        toast(`Compra vinculada #${json.data.number} criada.`);
+        onCreated();
+      }
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-3">
+      <div className="sm:col-span-2">
+        <Input label="Componente faltante" value={item} onChange={(e) => setItem(e.target.value)} />
+      </div>
+      <Input label="Qtd" value={quantity} onChange={(e) => setQuantity(e.target.value)} inputMode="numeric" />
+      <div className="sm:col-span-3">
+        <Button variant="secondary" disabled={busy} onClick={() => void create()}>
+          Criar compra vinculada
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function DetailInner({ id }: { id: string }) {
   const toast = useToast();
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -284,6 +343,12 @@ function DetailInner({ id }: { id: string }) {
             label: `Pausas (${pauses.length})`,
             content: (
               <Card title="Pausas e SLA">
+                {openPause && (
+                  <div className="mb-4 grid gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
+                    <p className="text-sm font-semibold">Pausa aberta: {openPause.reason} (SLA congelado)</p>
+                    <NewPurchaseFromOs workOrderId={id} pauseReason={openPause.reason} onCreated={() => load()} />
+                  </div>
+                )}
                 {pauses.length === 0 ? (
                   <p className="text-sm text-slate-500">Nenhuma pausa registrada.</p>
                 ) : (

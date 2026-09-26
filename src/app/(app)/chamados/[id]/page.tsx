@@ -13,6 +13,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { LoadingState } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
+import { Input, Textarea } from "@/components/ui/fields";
 
 interface Detail {
   ticket: {
@@ -46,6 +47,65 @@ const NEXT: Record<string, { label: string; to: string }[]> = {
   CONVERTIDO: [{ label: "Encerrar", to: "ENCERRADO" }],
   ENCERRADO: [],
 };
+
+function NewPurchaseFromTicket({
+  ticketId,
+  defaultItem,
+  defaultJustification,
+  onCreated,
+}: {
+  ticketId: string;
+  defaultItem: string;
+  defaultJustification: string;
+  onCreated: () => void;
+}) {
+  const toast = useToast();
+  const [item, setItem] = useState(defaultItem);
+  const [quantity, setQuantity] = useState("1");
+  const [justification, setJustification] = useState(defaultJustification);
+  const [busy, setBusy] = useState(false);
+
+  async function create() {
+    if (!item.trim() || justification.trim().length < 3) {
+      toast("Preencha item e justificativa.", "error");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/compras", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          origin: "ticket",
+          ticket_id: ticketId,
+          justification: justification.trim(),
+          items: [{ item: item.trim(), quantity: Number(quantity) || 1 }],
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Não foi possível criar.", "error");
+      else {
+        toast(`Solicitação de compra #${json.data.number} criada.`);
+        onCreated();
+      }
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-2">
+      <Input label="Item" value={item} onChange={(e) => setItem(e.target.value)} />
+      <Input label="Quantidade" value={quantity} onChange={(e) => setQuantity(e.target.value)} inputMode="numeric" />
+      <Textarea label="Justificativa" value={justification} onChange={(e) => setJustification(e.target.value)} rows={2} />
+      <Button variant="secondary" disabled={busy} onClick={() => void create()}>
+        Criar solicitação
+      </Button>
+    </div>
+  );
+}
 
 export default function ChamadoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -148,7 +208,18 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
                       </>
                     )}
                   </div>
-                  <p className="mt-3 text-xs text-slate-500">Conversão registra o destino; OS e compra nascem nas Fases 05/06.</p>
+                  <p className="mt-3 text-xs text-slate-500">Conversão registra o destino; a OS nasce na tela de OS e a compra no formulário abaixo.</p>
+                  {ticket.status === "CONVERTIDO" && events.some((e) => e.detail?.convert_to === "compra") && (
+                    <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3">
+                      <p className="text-sm font-semibold">Criar solicitação de compra</p>
+                      <NewPurchaseFromTicket
+                        ticketId={ticket.id}
+                        defaultItem={ticket.payload.item ?? ticket.payload.descricao ?? ""}
+                        defaultJustification={`Chamado #${ticket.number} — ${ticket.requester_name}`}
+                        onCreated={() => load()}
+                      />
+                    </div>
+                  )}
                 </Card>
               </div>
             ),
