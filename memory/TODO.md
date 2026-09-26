@@ -64,7 +64,7 @@
 - [x] 06.3 APIs (ciclo, cotacoes, recebimento + evento OS)
 - [x] 06.4 UI /compras + detalhe 4 abas + botoes de origem
 - [x] 06.5 E2E duas arvores validado
-- [ ] 06.6 Push + producao + memoria final
+- [x] 06.6 Push + producao + memoria final
 
 ## FASES 06–12 [PLANEJADAS — detalhadas apos Fase 05]
 - [ ] 06 Compras (duas arvores) + cotacao/aprovacao/pagamento/recebimento

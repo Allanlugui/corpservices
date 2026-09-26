@@ -48,7 +48,7 @@
 - APIs: criar por ticket/OS/manual, 13 transições, cotar/escolher, aprovação só gestor, pedido auto na aprovação, RECEBIDA → COMPONENTE_RECEBIDO na OS, rejeição → COMPRA_REJEITADA (OS segue pausada).
 - UI /compras + detalhe 4 abas + criação a partir do ticket e da OS pausada.
 - E2E: árvore A CONCLUIDA (12 eventos, 1 pedido) · árvore B rejeição→reenvio→aprovação→recebimento→OS retomada e ENCERRADA.
-- Producao: pendente de deploy desta etapa.
+- Producao: API 200 (n=4) + UI nova no ar. FASE 06 CONCLUIDA.
 
 ## FASE 05 — Ordem de Serviço (CONCLUIDA, 2026-09-26)
 - [x] 05.1 Migration v3 aplicada (work_orders, pause_reasons + 8 seeds, pauses, checklists, materials, events)
