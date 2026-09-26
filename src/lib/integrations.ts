@@ -18,7 +18,9 @@ function has(value: string | undefined): boolean {
 export function getIntegrations(
   env: Partial<Record<string, string | undefined>> = process.env,
 ): IntegrationInfo[] {
-  const supabase = has(env["SUPABASE_URL"]) && has(env["SUPABASE_ANON_KEY"]);
+  const supabase =
+    (has(env["SUPABASE_URL"]) || has(env["NEXT_PUBLIC_SUPABASE_URL"])) &&
+    (has(env["SUPABASE_ANON_KEY"]) || has(env["NEXT_PUBLIC_SUPABASE_ANON_KEY"]));
   return [
     {
       name: "Supabase (banco + auth)",

@@ -17,6 +17,14 @@ describe("getIntegrations", () => {
     expect(items.find((i) => i.name.startsWith("Supabase"))?.status).toBe("CONFIGURADO");
   });
 
+  it("aceita variaveis NEXT_PUBLIC_* (caso Vercel)", () => {
+    const items = getIntegrations({
+      NEXT_PUBLIC_SUPABASE_URL: "https://x.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "k",
+    });
+    expect(items.find((i) => i.name.startsWith("Supabase"))?.status).toBe("CONFIGURADO");
+  });
+
   it("nunca declara ERP como conectado sem integracao real", () => {
     for (const env of [{}, { SUPABASE_URL: "u", SUPABASE_ANON_KEY: "k" }]) {
       expect(getIntegrations(env).find((i) => i.name === "ERP")?.status).not.toBe("CONFIGURADO");
