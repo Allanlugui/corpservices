@@ -38,17 +38,27 @@ export async function GET(request: Request) {
       const actors = await resolveActors((events ?? []).map((e) => e.actor_profile_id));
       const bytes = await buildPdf({
         title: `Ticket #${t.number}`,
-        subtitle: `${t.kind} · ${t.status} · aberto em ${new Date(t.created_at).toLocaleString("pt-BR")}`,
+        subtitle: `${t.kind} · ${t.status}`,
+        meta: [["Aberto em", new Date(t.created_at).toLocaleString("pt-BR")], ["Solicitante", `${t.requester_name} · ${t.requester_email}`]],
         generatedBy: session.email,
         sections: [
-          { title: "Solicitante", rows: [["Nome", t.requester_name as string], ["E-mail", t.requester_email as string], ["Responsável", "—"]] },
-          { title: "Conteúdo", rows: Object.entries((t.payload ?? {}) as Record<string, string>).map(([k, v]) => [k, v]) },
+          {
+            title: "Conteúdo",
+            table: {
+              headers: ["Campo", "Valor"],
+              rows: Object.entries((t.payload ?? {}) as Record<string, string>).map(([k, v]) => [k, v]),
+            },
+          },
           {
             title: "Histórico",
-            rows: (events ?? []).map((e) => [
-              new Date(e.created_at as string).toLocaleString("pt-BR"),
-              `${e.event}${e.from_status ? ` (${e.from_status}→${e.to_status})` : ""} — por ${actors.get(e.actor_profile_id as string)?.name ?? "sistema"}`,
-            ]),
+            table: {
+              headers: ["Data", "Evento", "Por"],
+              rows: (events ?? []).map((e) => [
+                new Date(e.created_at as string).toLocaleString("pt-BR"),
+                `${e.event}${e.from_status ? ` (${e.from_status}→${e.to_status})` : ""}`,
+                actors.get(e.actor_profile_id as string)?.name ?? "sistema",
+              ]),
+            },
           },
         ],
       });
@@ -66,18 +76,40 @@ export async function GET(request: Request) {
       const actors = await resolveActors((events ?? []).map((e) => e.actor_profile_id));
       const bytes = await buildPdf({
         title: `OS-${String(w.number).padStart(6, "0")} · ${w.title}`,
-        subtitle: `${w.status} · prioridade ${w.priority} · SLA restante ${Math.round(Number(w.sla_remaining_ms) / 3600000)}h`,
+        subtitle: `${w.status} · prioridade ${w.priority}`,
+        meta: [
+          ["Local", (w.location as string) ?? "—"],
+          ["SLA restante", `${Math.round(Number(w.sla_remaining_ms) / 3600000)}h`],
+          ["Início", w.started_at ? new Date(w.started_at as string).toLocaleString("pt-BR") : "—"],
+          ["Conclusão", w.finished_at ? new Date(w.finished_at as string).toLocaleString("pt-BR") : "—"],
+        ],
         generatedBy: session.email,
         sections: [
-          { title: "Execução", rows: [["Descrição", w.description as string], ["Local", (w.location as string) ?? ""], ["Início", w.started_at ? new Date(w.started_at as string).toLocaleString("pt-BR") : ""], ["Conclusão", w.finished_at ? new Date(w.finished_at as string).toLocaleString("pt-BR") : ""]] },
-          { title: "Pausas", rows: (pauses ?? []).map((p) => [`${p.reason}`, `${new Date(p.paused_at as string).toLocaleString("pt-BR")} → ${p.resumed_at ? new Date(p.resumed_at as string).toLocaleString("pt-BR") : "aberta"}`]) },
-          { title: "Materiais", rows: (materials ?? []).map((m) => [`${m.product_name}`, `${m.quantity} ${m.unit}`]) },
+          { title: "Descrição", rows: [["Texto", w.description as string]] },
+          {
+            title: "Pausas",
+            table: {
+              headers: ["Motivo", "Período"],
+              rows: (pauses ?? []).map((p) => [`${p.reason}`, `${new Date(p.paused_at as string).toLocaleString("pt-BR")} → ${p.resumed_at ? new Date(p.resumed_at as string).toLocaleString("pt-BR") : "aberta"}`]),
+            },
+          },
+          {
+            title: "Materiais",
+            table: {
+              headers: ["Material", "Quantidade"],
+              rows: (materials ?? []).map((m) => [`${m.product_name}`, `${m.quantity} ${m.unit}`]),
+            },
+          },
           {
             title: "Histórico",
-            rows: (events ?? []).map((e) => [
-              new Date(e.created_at as string).toLocaleString("pt-BR"),
-              `${e.event}${e.from_status ? ` (${e.from_status}→${e.to_status})` : ""} — por ${actors.get(e.actor_profile_id as string)?.name ?? "sistema"}`,
-            ]),
+            table: {
+              headers: ["Data", "Evento", "Por"],
+              rows: (events ?? []).map((e) => [
+                new Date(e.created_at as string).toLocaleString("pt-BR"),
+                `${e.event}${e.from_status ? ` (${e.from_status}→${e.to_status})` : ""}`,
+                actors.get(e.actor_profile_id as string)?.name ?? "sistema",
+              ]),
+            },
           },
         ],
       });
@@ -94,18 +126,34 @@ export async function GET(request: Request) {
     const actors = await resolveActors((events ?? []).map((e) => e.actor_profile_id));
     const bytes = await buildPdf({
       title: `Compra #${p.number}`,
-      subtitle: `${p.status} · origem ${p.origin} · ${new Date(p.created_at).toLocaleString("pt-BR")}`,
+      subtitle: `${p.status} · origem ${p.origin}`,
+      meta: [["Aberta em", new Date(p.created_at).toLocaleString("pt-BR")], ["Justificativa", p.justification as string]],
       generatedBy: session.email,
       sections: [
-        { title: "Justificativa", rows: [["Texto", p.justification as string]] },
-        { title: "Itens", rows: (items ?? []).map((i) => [`${i.item}`, `${i.quantity} — ${i.description || ""}`]) },
-        { title: "Cotações", rows: (quotes ?? []).map((q) => [`${q.supplier}`, `${(Number(q.amount_cents) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}${q.chosen ? " (escolhida)" : ""}`]) },
+        {
+          title: "Itens",
+          table: {
+            headers: ["Item", "Quantidade", "Detalhe"],
+            rows: (items ?? []).map((i) => [`${i.item}`, `${i.quantity}`, `${i.description || ""}`]),
+          },
+        },
+        {
+          title: "Cotações",
+          table: {
+            headers: ["Fornecedor", "Valor", "Situação"],
+            rows: (quotes ?? []).map((q) => [`${q.supplier}`, `${(Number(q.amount_cents) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`, q.chosen ? "escolhida" : "cotada"]),
+          },
+        },
         {
           title: "Histórico",
-          rows: (events ?? []).map((e) => [
-            new Date(e.created_at as string).toLocaleString("pt-BR"),
-            `${e.event}${e.from_status ? ` (${e.from_status}→${e.to_status})` : ""} — por ${actors.get(e.actor_profile_id as string)?.name ?? "sistema"}`,
-          ]),
+          table: {
+            headers: ["Data", "Evento", "Por"],
+            rows: (events ?? []).map((e) => [
+              new Date(e.created_at as string).toLocaleString("pt-BR"),
+              `${e.event}${e.from_status ? ` (${e.from_status}→${e.to_status})` : ""}`,
+              actors.get(e.actor_profile_id as string)?.name ?? "sistema",
+            ]),
+          },
         },
       ],
     });
