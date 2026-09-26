@@ -7,7 +7,7 @@ import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
 import { Timeline } from "@/components/ui/timeline";
-import { Button } from "@/components/ui/button";
+import { Button, ActionLink } from "@/components/ui/button";
 import { Input, Select, Checkbox } from "@/components/ui/fields";
 import { ConfirmDialog } from "@/components/ui/modal";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -343,7 +343,7 @@ function DetailInner({ id }: { id: string }) {
         <PageHeader
           title={`OS-${String(wo.number).padStart(6, "0")} · ${wo.title}`}
           description={`${wo.location ?? "Local não informado"} · SLA restante ${formatRemaining(wo.sla_remaining_ms)}${openPause ? " (congelado — pausada)" : ""}`}
-          actions={<><StatusBadge status={wo.status} /> <PriorityBadge priority={wo.priority} /> <a href={`/api/pdf?entity=os&id=${wo.id}`} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50">Baixar PDF</a></>}
+          actions={<><StatusBadge status={wo.status} /> <PriorityBadge priority={wo.priority} /> <ActionLink href={`/api/pdf?entity=os&id=${wo.id}`}>Baixar PDF</ActionLink></>}
         />
       </div>
       <Tabs

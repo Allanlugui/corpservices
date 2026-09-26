@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
 import { Timeline } from "@/components/ui/timeline";
-import { Button } from "@/components/ui/button";
+import { Button, ActionLink } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/fields";
 import { ConfirmDialog } from "@/components/ui/modal";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -170,7 +170,7 @@ function DetailInner({ id }: { id: string }) {
         <PageHeader
           title={`Compra #${p.number}`}
           description={`Origem ${p.origin === "TICKET" ? "cliente" : p.origin === "WORK_ORDER" ? "OS" : "manual"}${p.origin_label ? ` · ${p.origin_label}` : ""} · ${new Date(p.created_at).toLocaleString("pt-BR")}`}
-          actions={<><StatusBadge status={p.status} /> <a href={`/api/pdf?entity=compra&id=${p.id}`} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50">Baixar PDF</a></>}
+          actions={<><StatusBadge status={p.status} /> <ActionLink href={`/api/pdf?entity=compra&id=${p.id}`}>Baixar PDF</ActionLink></>}
         />
       </div>
       {p.rejection_reason ? (

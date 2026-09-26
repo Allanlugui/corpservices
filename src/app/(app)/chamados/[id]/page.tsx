@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
 import { Timeline } from "@/components/ui/timeline";
 import { Button } from "@/components/ui/button";
+import { ActionLink } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/modal";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { LoadingState } from "@/components/ui/skeleton";
@@ -212,7 +213,7 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
         <PageHeader
           title={`Chamado #${ticket.number}`}
           description={`${ticket.requester_name} · ${ticket.requester_email} · ${new Date(ticket.created_at).toLocaleString("pt-BR")}`}
-          actions={<><StatusBadge status={ticket.status} /> <a href={`/api/pdf?entity=ticket&id=${ticket.id}`} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50">Baixar PDF</a></>}
+          actions={<><StatusBadge status={ticket.status} /> <ActionLink href={`/api/pdf?entity=ticket&id=${ticket.id}`}>Baixar PDF</ActionLink></>}
         />
       </div>
       <Tabs
