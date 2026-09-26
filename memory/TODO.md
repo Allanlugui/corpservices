@@ -40,9 +40,13 @@
 - [x] 03.5 E2E local + producao validada + push
 - Notas: upload de fotos → FASE 08; e-mail do link → P-05 (sem SMTP)
 
-## FASE 04 — Chamados [PLANEJADA — aguardando aval]
-- [ ] 04.1 Tela central Todos/Servicos/Compras (gestor, autenticado)
-- [ ] 04.2 Acoes: resolver, encaminhar, converter em OS/compra
+## FASE 04 — Chamados [CONCLUIDA 2026-09-26]
+- [x] 04.1 requireProfile + APIs listar/detalhe/transicao
+- [x] 04.2 UI tabs + detalhe com acoes
+- [x] 04.3 E2E autenticado (LIST/PATCH/eventos)
+- [x] 04.4 Gates + push + producao
+
+## FASE 05 — Ordem de Servico [PLANEJADA — aguardando aval]
 
 ## FASE 04 — Chamados [PLANEJADA]
 - [ ] 04.1 Tela central + acoes do gestor (resolver/encaminhar/converter OS/compra)

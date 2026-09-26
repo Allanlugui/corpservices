@@ -15,6 +15,12 @@
 - Proximo: (a) trocar senha temporaria do admin, (b) token Vercel para deploy (P-03), (c) AVAL → FASE 03.
 - **GitHub:** repo privado `Allanlugui/corpservices`, branch master, push OK (4 commits).
 - **Vercel:** projeto `corpservices` (git Allanlugui/corpservices) com deploy automatico; PRODUCAO VALIDADA em `https://corpservices.vercel.app` (health 200 Supabase=CONFIGURADO, /login 200, `/` → 307 /login). Nota: URLs de preview exigem login Vercel (Deployment Protection); alias de producao e publico.
+## FASE 04 — Chamados (CONCLUIDA, 2026-09-26)
+- `requireProfile()` server-side (sessao + papel, fail-closed) + APIs GET listar/filtrar, GET detalhe, PATCH transicao/conversao com `ticket_events`.
+- UI `/chamados` (tabs Todos/Servicos/Compras) + `/chamados/[id]` (dados, sugestoes IA, acoes, historico).
+- Conversao registra destino + modulo pendente (OS→Fase 05, compra→Fase 06); nada fingido como criado.
+- E2E autenticado: LIST 200 (n=2) → PATCH NOVO→EM_TRIAGEM 200 → detalhe + eventos CRIADO,ALTERADO.
+- Producao: `/chamados` OK; API sem auth → 307 /login.
 ## FASE 03 — Tickets e triagem BotIA (CONCLUIDA, 2026-09-26)
 - Migration v2 aplicada: tickets, ticket_messages, ticket_attachments, ticket_events, ai_conversations, ai_messages, ai_actions + RPC `get_ticket_by_token`.
 - BotIA: `AIProvider` + `DeterministicProvider` (classifica, aponta faltantes, nunca sobrescreve humano em empate); trilha auditavel por solicitacao.
