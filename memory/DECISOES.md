@@ -74,6 +74,15 @@
 - Escolha: `(public)` (login, solicitar) × `(app)` (AppShell: Sidebar + Header + main max-w-7xl); sidebar filtrada por `can(role)`; dashboard com KPIs reais de `/api/dashboard`; 20 primitivas de design system sem nova lib visual além de `lucide-react`.
 - Incidente: imports `@/components/ui/badge` vs arquivo `Badge.tsx` quebraram o build no Linux (case-sensitive). Fix: rename para minúsculas; padrão: arquivos sempre minúsculos.
 - Reversao: baixa (só apresentação; APIs e banco intactos).
+
+## D-15 — RETOMADA como evento, não status (2026-09-26, Fase 05)
+- Contexto: plano §25 lista RETOMADA entre estados; status persistido duplicaria EM_EXECUCAO e complicaria o SLA.
+- Escolha: transição PAUSADA→EM_EXECUCAO com evento RETOMADA (duração e SLA registrados na pausa).
+- Reversao: baixa.
+- Contexto: conteúdo comprimido, sem sidebar, portal público vendo navegação interna, dashboard estático.
+- Escolha: `(public)` (login, solicitar) × `(app)` (AppShell: Sidebar + Header + main max-w-7xl); sidebar filtrada por `can(role)`; dashboard com KPIs reais de `/api/dashboard`; 20 primitivas de design system sem nova lib visual além de `lucide-react`.
+- Incidente: imports `@/components/ui/badge` vs arquivo `Badge.tsx` quebraram o build no Linux (case-sensitive). Fix: rename para minúsculas; padrão: arquivos sempre minúsculos.
+- Reversao: baixa (só apresentação; APIs e banco intactos).
 - Contexto: `create-next-app@latest` entrega Next 16.3.6 + Tailwind v4 (D-01 previa v15).
 - Escolha: aceitar a versao do template; dois ajustes manuais (`LayoutProps` removido → `ReactNode` explicito; `Badge` children `ReactNode`).
 - Motivo: acompanhar o template reduz divergencia futura; nada do plano depende de v15 especifica.
