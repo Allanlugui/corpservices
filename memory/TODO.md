@@ -98,7 +98,13 @@
 - [x] F-01 Arquivos somente-leitura: upload na OS/compra/produto; paste Ctrl+V; docs na designação
 - [x] F-02 NF vinculada: aba NF na compra + XML auto-salvo + NFs transversais nos Arquivos
 
-## FASES 09–12 [PLANEJADAS]
+## FASE 06b — Fluxo de compras + financeiro [PLANEJADA — escopo do usuário, sem quebrar atual]
+- [ ] COT-01 Recibo de pagamento anexado ao pedido + tratativa (prazo de entrega, acompanhamento)
+- [ ] COT-02 Troca de fornecedor pós-aprovação volta para aprovação (re-quote com re-aprovação)
+- [ ] NF-01 Nota fiscal vinculada ao PEDIDO (não à solicitação); XML auto-salvo linkado ao pedido
+- [ ] FIN-01 Relatórios com foco em custo operacional (CorpServices Group)
+- [ ] FIN-02 Métricas financeiras no dashboard
+- Base existente aproveitada: cotações com notas, escolha do gestor, rejeição justificada, pedido auto, recebimento, aba NF
 ## FASE 09 — Offline-first v1 [CONCLUIDA 2026-09-26]
 - [x] Migration v9 + outbox + sync + idempotencia (38 testes, E2E sem duplicar)
 - [ ] 10 BotIA LLM (hoje só determinístico)
@@ -114,8 +120,6 @@
 - [x] P1-01 Dashboards por perfil (5 visões, dados reais)
 - [x] P1-02 Parâmetros (3 com consumidor + auditoria) — migration APLICADA e validada (P-08 resolvido)
 - [x] P2 Assignment validado server-side + 5 testes
-- [ ] Dashboards por perfil
-- [ ] Backup honesto / parâmetros
 
 ## Dependencias externas (BLOQUEADO POR DEPENDENCIA EXTERNA ate providas)
 - [ ] Supabase URL + keys · GitHub remote · Vercel projeto · SMTP/push · provedor LLM · API ERP
