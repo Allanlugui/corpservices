@@ -111,3 +111,8 @@
 - Contexto: fotos de campo por técnico/estoque sem vazar entre orgs.
 - Escolha: bucket privado sem policies diretas (default deny) + signed URLs via servidor; upload operacional (files:create), exclusão só gestor/admin.
 - Reversao: baixa.
+
+## D-21 — Backup como export honesto (2026-09-26, ajustes2)
+- Contexto: migração futura para MongoDB/MariaDB/outros.
+- Escolha: export JSON (dados + mapa de coleções + restore_notes) somente admin; DDL canônico nas migrations; sem replicação ao vivo.
+- Reversao: baixa.
