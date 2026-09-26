@@ -110,3 +110,9 @@ Feito (validado): Fases 00‚Äì07, corre√ß√£o UX, 2 revis√µes. Pendente real:
 - Portal cria na fila offline; acoes Chamados/OS enfileiram; header com PENDENTES + sincronizar.
 - E2E: reenvio nao duplica (ticket #12, evento unico) ∑ 38 testes ∑ deploy READY.
 - Limite honesto: fila de operacoes (fotos offline e sync bidirecional completo ficam p/ evolucao).
+
+## FASE 12 ó VALIDACAO FINAL (CONCLUIDA, 2026-09-26)
+- Migration app_settings verificada via REST (sem reexecutar).
+- Settings em producao: GET/PATCH/persistencia/ranges/keys/auditoria/consumidor SLA OK.
+- Gates: lint 0, tsc 0, 43/43, build OK. Smoke: health/login/dashboard/settings/assignment/paginas 200.
+- FASE 12 CONCLUIDA.

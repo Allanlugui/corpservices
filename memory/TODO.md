@@ -112,7 +112,7 @@
 - [x] PDF profissional (faixa, tabelas zebra, rodapé) + Metas configuráveis com progresso real
 - [x] Relatórios com filtros + CSV com BOM + impressão
 - [x] P1-01 Dashboards por perfil (5 visões, dados reais)
-- [x] P1-02 Parâmetros (3 com consumidor + auditoria) — migration BLOQUEADA p/ apply (P-08)
+- [x] P1-02 Parâmetros (3 com consumidor + auditoria) — migration APLICADA e validada (P-08 resolvido)
 - [x] P2 Assignment validado server-side + 5 testes
 - [ ] Dashboards por perfil
 - [ ] Backup honesto / parâmetros
