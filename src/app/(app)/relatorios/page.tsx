@@ -1,11 +1,113 @@
-import { ModulePlaceholder } from "@/components/ModulePlaceholder";
+"use client";
+
+import { useEffect, useState } from "react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { FilterBar } from "@/components/ui/filterbar";
+import { DataTable } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/states";
+import { useToast } from "@/components/ui/toast";
+
+type Entity = "tickets" | "os" | "compras" | "estoque" | "movimentacoes";
+const ENTITIES: [Entity, string][] = [
+  ["tickets", "Chamados"],
+  ["os", "OS"],
+  ["compras", "Compras"],
+  ["estoque", "Estoque"],
+  ["movimentacoes", "Movimentações"],
+];
+const PERIODS: [string, string][] = [
+  ["dia", "Dia"],
+  ["semana", "Semana"],
+  ["mes", "Mês"],
+  ["trimestre", "Trimestre"],
+  ["ano", "Ano"],
+  ["tudo", "Tudo"],
+];
 
 export default function RelatoriosPage() {
+  const toast = useToast();
+  const [entity, setEntity] = useState<Entity>("tickets");
+  const [periodo, setPeriodo] = useState("mes");
+  const [status, setStatus] = useState("");
+  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams({ entity, periodo });
+    if (status) params.set("status", status);
+    fetch(`/api/relatorios?${params.toString()}`)
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok || json.error) setError(json.error?.message ?? "Falha ao carregar.");
+        else setRows(json.data.rows as Record<string, unknown>[]);
+      })
+      .catch(() => setError("Falha de rede."))
+      .finally(() => setLoading(false));
+  }, [entity, periodo, status]);
+
+  function exportCsv() {
+    const params = new URLSearchParams({ entity, periodo, format: "csv" });
+    if (status) params.set("status", status);
+    window.open(`/api/relatorios?${params.toString()}`, "_blank", "noopener");
+    toast("CSV exportado.");
+  }
+
+  const columns = rows.length > 0 ? Object.keys(rows[0]).slice(0, 6) : [];
+
   return (
-    <ModulePlaceholder
-      title="Relatórios"
-      fase="FASE 12"
-      description="Central de relatórios com filtros, exportação CSV/PDF e impressão."
-    />
+    <section>
+      <PageHeader
+        title="Relatórios"
+        description="Filtros por entidade e período, exportação CSV e impressão."
+        actions={
+          <>
+            <Button variant="secondary" size="sm" onClick={exportCsv}>Exportar CSV</Button>
+            <Button variant="secondary" size="sm" onClick={() => window.print()}>Imprimir</Button>
+          </>
+        }
+      />
+      <div className="mb-4 flex gap-2 overflow-x-auto" role="tablist" aria-label="Entidade">
+        {ENTITIES.map(([v, label]) => (
+          <button
+            key={v}
+            role="tab"
+            aria-selected={entity === v}
+            onClick={() => { setEntity(v); setStatus(""); }}
+            className={`min-h-11 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold ${entity === v ? "bg-slate-900 text-white" : "border border-slate-300 bg-white text-slate-700"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <FilterBar searchPlaceholder="Filtros do relatório">
+        <select value={periodo} onChange={(e) => setPeriodo(e.target.value)} aria-label="Período" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm">
+          {PERIODS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+        </select>
+        <input value={status} onChange={(e) => setStatus(e.target.value.toUpperCase())} placeholder="Status exato (opcional)" aria-label="Status exato" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm" />
+      </FilterBar>
+      {loading ? (
+        <LoadingState label="Gerando relatório…" />
+      ) : error ? (
+        <ErrorState title="Não foi possível gerar" description={error} onRetry={() => window.location.reload()} />
+      ) : (
+        <div className="print:block">
+          <DataTable
+            caption={`Relatório de ${entity}`}
+            columns={columns.map((c) => ({
+              key: c,
+              header: c.replaceAll("_", " "),
+              render: (r: Record<string, unknown>) => <span className="text-xs">{String(r[c] ?? "—").slice(0, 60)}</span>,
+            }))}
+            rows={rows.map((r, i) => ({ id: i, ...r }))}
+            emptyTitle="Sem dados"
+            emptyDescription="Ajuste entidade, período ou status."
+          />
+          <p className="mt-2 text-xs text-slate-500 print:hidden">{rows.length} linha(s). Documentos individuais em PDF ficam nos detalhes.</p>
+        </div>
+      )}
+    </section>
   );
 }
