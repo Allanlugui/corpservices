@@ -1,0 +1,21 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+/** Sinal real de conectividade (navigator.onLine). Fila offline real: Fase 09. */
+export function useOnline(): boolean {
+  const [online, setOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+  return online;
+}

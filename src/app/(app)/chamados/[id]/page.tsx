@@ -1,0 +1,188 @@
+"use client";
+
+import { use, useEffect, useState } from "react";
+import Link from "next/link";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusBadge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Tabs } from "@/components/ui/tabs";
+import { Timeline } from "@/components/ui/timeline";
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/modal";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { LoadingState } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/states";
+import { useToast } from "@/components/ui/toast";
+
+interface Detail {
+  ticket: {
+    id: string;
+    number: number;
+    kind: string;
+    status: string;
+    requester_name: string;
+    requester_email: string;
+    category: string | null;
+    priority: string | null;
+    payload: Record<string, string>;
+    ai_suggested_kind: string | null;
+    ai_missing_fields: string[];
+    created_at: string;
+  };
+  events: { event: string; from_status: string | null; to_status: string | null; detail: Record<string, unknown>; created_at: string }[];
+}
+
+const NEXT: Record<string, { label: string; to: string }[]> = {
+  NOVO: [{ label: "Iniciar triagem", to: "EM_TRIAGEM" }],
+  EM_TRIAGEM: [
+    { label: "Enviar para análise", to: "EM_ANALISE" },
+    { label: "Resolver direto", to: "RESOLVIDO" },
+  ],
+  EM_ANALISE: [{ label: "Resolver", to: "RESOLVIDO" }],
+  RESOLVIDO: [
+    { label: "Encerrar", to: "ENCERRADO" },
+    { label: "Reabrir análise", to: "EM_ANALISE" },
+  ],
+  CONVERTIDO: [{ label: "Encerrar", to: "ENCERRADO" }],
+  ENCERRADO: [],
+};
+
+export default function ChamadoDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const toast = useToast();
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState<{ label: string; body: Record<string, unknown> } | null>(null);
+
+  function load() {
+    fetch(`/api/chamados/${id}`)
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok || json.error) setError(json.error?.message ?? "Falha ao carregar.");
+        else setDetail(json.data as Detail);
+      })
+      .catch(() => setError("Falha de rede."));
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  async function act(body: Record<string, unknown>, label: string) {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/chamados/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        toast(json.error?.message ?? "Ação recusada.", "error");
+      } else {
+        toast(`Chamado atualizado: ${label}.`);
+        load();
+      }
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+      setConfirm(null);
+    }
+  }
+
+  if (error && !detail) return <ErrorState title="Chamado indisponível" description={error} onRetry={() => window.location.reload()} />;
+  if (!detail) return <LoadingState label="Carregando chamado…" />;
+  const { ticket, events } = detail;
+
+  return (
+    <section>
+      <Breadcrumb items={[{ label: "Início", href: "/" }, { label: "Chamados", href: "/chamados" }, { label: `#${ticket.number}` }]} />
+      <div className="mt-2">
+        <PageHeader
+          title={`Chamado #${ticket.number}`}
+          description={`${ticket.requester_name} · ${ticket.requester_email} · ${new Date(ticket.created_at).toLocaleString("pt-BR")}`}
+          actions={<StatusBadge status={ticket.status} />}
+        />
+      </div>
+      <Tabs
+        tabs={[
+          {
+            id: "resumo",
+            label: "Resumo",
+            content: (
+              <div className="grid gap-4 lg:grid-cols-3">
+                <Card title="Solicitação" className="lg:col-span-2">
+                  <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                    <div><dt className="text-slate-500">Tipo</dt><dd className="font-medium">{ticket.kind}</dd></div>
+                    <div><dt className="text-slate-500">Sugestão da IA</dt><dd className="font-medium">{ticket.ai_suggested_kind ?? "—"}</dd></div>
+                    <div><dt className="text-slate-500">Categoria</dt><dd className="font-medium">{ticket.category ?? "—"}</dd></div>
+                    <div><dt className="text-slate-500">Prioridade</dt><dd className="font-medium">{ticket.priority ?? "—"}</dd></div>
+                  </dl>
+                  <ul className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-sm">
+                    {Object.entries(ticket.payload).map(([k, v]) => <li key={k}><strong>{k}:</strong> {v}</li>)}
+                  </ul>
+                  {ticket.ai_missing_fields.length > 0 ? (
+                    <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                      A triagem sugere completar: {ticket.ai_missing_fields.join(", ")}.
+                    </p>
+                  ) : null}
+                </Card>
+                <Card title="Ações do gestor">
+                  <div className="grid gap-2">
+                    {(NEXT[ticket.status] ?? []).map((a) => (
+                      <Button key={a.to} disabled={busy} onClick={() => setConfirm({ label: a.label, body: { action: "advance", to: a.to } })}>
+                        {a.label}
+                      </Button>
+                    ))}
+                    {(ticket.status === "EM_ANALISE" || ticket.status === "EM_TRIAGEM") && (
+                      <>
+                        <Button variant="secondary" disabled={busy} onClick={() => setConfirm({ label: "Converter em OS", body: { action: "convert", target: "os" } })}>
+                          Converter em OS
+                        </Button>
+                        <Button variant="secondary" disabled={busy} onClick={() => setConfirm({ label: "Converter em compra", body: { action: "convert", target: "compra" } })}>
+                          Converter em compra
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  <p className="mt-3 text-xs text-slate-500">Conversão registra o destino; OS e compra nascem nas Fases 05/06.</p>
+                </Card>
+              </div>
+            ),
+          },
+          {
+            id: "historico",
+            label: `Histórico (${events.length})`,
+            content: (
+              <Card title="Linha do tempo">
+                <Timeline
+                  items={events.map((e) => ({
+                    title: e.event + (e.from_status ? ` (${e.from_status} → ${e.to_status})` : ""),
+                    detail: typeof e.detail?.convert_to === "string" ? `Destino: ${e.detail.convert_to}` : undefined,
+                    at: e.created_at,
+                  }))}
+                />
+              </Card>
+            ),
+          },
+        ]}
+      />
+      <p className="mt-4 text-sm">
+        <Link href="/chamados" className="font-semibold text-brand-700 hover:underline">← Voltar para Chamados</Link>
+      </p>
+      {confirm ? (
+        <ConfirmDialog
+          title={confirm.label}
+          description={`Confirmar "${confirm.label}" no chamado #${ticket.number}? O evento fica registrado no histórico.`}
+          confirmLabel={confirm.label}
+          busy={busy}
+          onClose={() => setConfirm(null)}
+          onConfirm={() => void act(confirm.body, confirm.label)}
+        />
+      ) : null}
+    </section>
+  );
+}

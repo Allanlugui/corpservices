@@ -3,7 +3,10 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Badge } from "@/components/ui/Badge";
+import { StatusBadge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Timeline } from "@/components/ui/timeline";
 
 interface TicketInfo {
   number: number;
@@ -63,29 +66,32 @@ function Acompanhar() {
   }, []);
 
   return (
-    <section className="mx-auto max-w-lg">
+    <section className="mx-auto max-w-xl">
       <PageHeader title="Acompanhar solicitação" />
-      <form onSubmit={(e) => { e.preventDefault(); setLoading(true); void lookup(token); }} className="flex gap-2">
-        <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Cole o token do link" className="flex-1 rounded border border-slate-300 px-3 py-2 font-mono text-sm" />
-        <button type="submit" disabled={loading} className="rounded bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50">
-          {loading ? "…" : "Buscar"}
-        </button>
-      </form>
+      <Card>
+        <form onSubmit={(e) => { e.preventDefault(); setLoading(true); void lookup(token); }} className="flex gap-2">
+          <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Cole o token do link" aria-label="Token de acompanhamento" className="min-h-11 flex-1 rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm" />
+          <Button type="submit" disabled={loading}>
+            {loading ? "…" : "Buscar"}
+          </Button>
+        </form>
+      </Card>
       {error ? <p role="alert" className="mt-3 text-sm font-medium text-red-700">{error}</p> : null}
       {info ? (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <p className="text-lg font-bold">Protocolo {info.number}</p>
-            <Badge tone={info.status === "NOVO" ? "pending" : "ok"}>{info.status.replaceAll("_", " ")}</Badge>
-          </div>
-          <p className="mt-2 text-sm"><strong>Tipo:</strong> {info.kind}</p>
+        <Card
+          title={`Protocolo ${info.number}`}
+          className="mt-4"
+          actions={<StatusBadge status={info.status} />}
+        >
+          <p className="text-sm"><strong>Tipo:</strong> {info.kind}</p>
           {info.summary ? <p className="mt-1 text-sm text-slate-700">{info.summary}</p> : null}
           <h2 className="mt-4 font-semibold">Histórico</h2>
-          <ul className="mt-1 text-sm">
-            {events.length === 0 ? <li className="text-slate-500">Recebido, aguardando triagem.</li> : null}
-            {events.map((e, i) => <li key={i}>{e.event} — {new Date(e.at).toLocaleString("pt-BR")}</li>)}
-          </ul>
-        </div>
+          <div className="mt-2">
+            <Timeline
+              items={events.length === 0 ? [{ title: "Recebido", detail: "Aguardando triagem.", at: info.created_at }] : events.map((e) => ({ title: e.event, at: e.at }))}
+            />
+          </div>
+        </Card>
       ) : null}
     </section>
   );

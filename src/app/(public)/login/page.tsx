@@ -4,6 +4,9 @@ import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/fields";
+import { Button } from "@/components/ui/button";
 
 function LoginForm() {
   const router = useRouter();
@@ -32,42 +35,20 @@ function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <label className="block text-sm font-medium">
-        E-mail
-        <input
-          type="email"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 block w-full rounded border border-slate-300 px-3 py-2"
-        />
-      </label>
-      <label className="mt-4 block text-sm font-medium">
-        Senha
-        <input
-          type="password"
-          required
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 block w-full rounded border border-slate-300 px-3 py-2"
-        />
-      </label>
-      {error ? (
-        <p role="alert" className="mt-3 text-sm font-medium text-red-700">
-          {error}
-        </p>
-      ) : null}
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-5 w-full rounded bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
-      >
-        {loading ? "Entrando…" : "Entrar"}
-      </button>
-    </form>
+    <Card title="Acesso à plataforma">
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <Input label="E-mail" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input label="Senha" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        {error ? (
+          <p role="alert" className="text-sm font-medium text-red-700">
+            {error}
+          </p>
+        ) : null}
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? "Entrando…" : "Entrar"}
+        </Button>
+      </form>
+    </Card>
   );
 }
 

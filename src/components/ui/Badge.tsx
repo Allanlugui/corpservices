@@ -5,6 +5,7 @@ const TONES: Record<string, string> = {
   warn: "bg-amber-100 text-amber-900",
   pending: "bg-slate-200 text-slate-700",
   blocked: "bg-red-100 text-red-900",
+  info: "bg-brand-100 text-brand-900",
 };
 
 export function Badge({
@@ -20,4 +21,33 @@ export function Badge({
       {children}
     </span>
   );
+}
+
+const STATUS_TONE: Record<string, string> = {
+  NOVO: "warn",
+  EM_TRIAGEM: "info",
+  EM_ANALISE: "info",
+  CONVERTIDO: "info",
+  RESOLVIDO: "ok",
+  ENCERRADO: "pending",
+  ABERTA: "warn",
+  ATRIBUIDA: "info",
+  EM_EXECUCAO: "info",
+  PAUSADA: "warn",
+  CONCLUIDA: "ok",
+  VALIDACAO: "info",
+  SOLICITADA: "warn",
+  APROVADA: "ok",
+  REJEITADA: "blocked",
+  CANCELADA: "blocked",
+};
+
+export function StatusBadge({ status }: { status: string }) {
+  return <Badge tone={STATUS_TONE[status] ?? "pending"}>{status.replaceAll("_", " ")}</Badge>;
+}
+
+export function PriorityBadge({ priority }: { priority: string | null }) {
+  if (!priority) return <span className="text-xs text-slate-400">—</span>;
+  const tone = priority === "critica" ? "blocked" : priority === "alta" ? "warn" : "pending";
+  return <Badge tone={tone}>{priority}</Badge>;
 }
