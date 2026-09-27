@@ -256,8 +256,122 @@ function Email() {
           <Button variant="secondary" disabled={busy || !queue.configured} onClick={() => void sendTest()}>Enviar teste</Button>
         </div>
       </Card>
-      <p className="text-xs text-slate-500">Kill-switch por org em Parâmetros → E-mail ativo. Push (VAPID) pendente de decisão.</p>
+      <p className="text-xs text-slate-500">Kill-switch por org em Parâmetros → E-mail ativo. Push configurado abaixo.</p>
+      <PushCard />
     </div>
+  );
+}
+
+function urlBase64ToU8(base64: string): Uint8Array<ArrayBuffer> {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const raw = atob(base64.replace(/-/g, "+").replace(/_/g, "/") + padding);
+  const out = new Uint8Array(new ArrayBuffer(raw.length));
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+function PushCard() {
+  const toast = useToast();
+  const [state, setState] = useState<"idle" | "on" | "off" | "unsupported">("idle");
+  const [busy, setBusy] = useState(false);
+  const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+
+  useEffect(() => {
+    let alive = true;
+    const done = (s: "on" | "off" | "unsupported") => {
+      if (alive) setState(s);
+    };
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !vapid) {
+      done("unsupported");
+      return () => {
+        alive = false;
+      };
+    }
+    void navigator.serviceWorker.ready.then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription();
+      done(sub ? "on" : "off");
+    }).catch(() => done("unsupported"));
+    return () => {
+      alive = false;
+    };
+  }, [vapid]);
+
+  async function enable() {
+    setBusy(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToU8(vapid) });
+      const res = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: sub.endpoint, keys: sub.toJSON().keys }),
+      });
+      if (!res.ok) {
+        await sub.unsubscribe();
+        toast("Não foi possível ativar.", "error");
+      } else {
+        setState("on");
+        toast("Push ativado neste dispositivo.");
+      }
+    } catch {
+      toast("Permissão negada ou falha.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disable() {
+    setBusy(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await fetch("/api/push/subscribe", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
+        await sub.unsubscribe();
+      }
+      setState("off");
+      toast("Push desativado.");
+    } catch {
+      toast("Falha ao desativar.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function test() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/push/subscribe", { method: "PUT" });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Falha.", "error");
+      else toast(`Push enviado (${json.data.sent} dispositivo(s)).`);
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card title="Push neste dispositivo">
+      {state === "unsupported" ? (
+        <p className="text-sm text-slate-500">Push indisponível (navegador sem suporte ou VAPID ausente).</p>
+      ) : state === "idle" ? (
+        <LoadingState label="Verificando push…" />
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <Badge tone={state === "on" ? "ok" : "blocked"}>{state === "on" ? "ATIVO" : "INATIVO"}</Badge>
+          {state === "on" ? (
+            <>
+              <Button variant="secondary" disabled={busy} onClick={() => void test()}>Enviar teste</Button>
+              <Button variant="secondary" disabled={busy} onClick={() => void disable()}>Desativar</Button>
+            </>
+          ) : (
+            <Button variant="secondary" disabled={busy} onClick={() => void enable()}>Ativar push</Button>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -277,7 +391,7 @@ function ConfigInner({ initialTab }: { initialTab: number }) {
             label: "Parâmetros",
             content: <Parametros />,
           },
-          { id: "email", label: "E-mail", content: <Email /> },
+          { id: "email", label: "E-mail e push", content: <Email /> },
         ]}
       />
       <p className="mt-4 text-sm">

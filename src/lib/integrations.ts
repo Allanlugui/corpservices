@@ -48,8 +48,10 @@ export function getIntegrations(
     },
     {
       name: "Push (VAPID)",
-      status: "PENDENTE_DE_INTEGRACAO",
-      detail: "Infra de push prevista; chaves VAPID ainda não geradas.",
+      status: has(env["VAPID_PRIVATE_KEY"]) ? "CONFIGURADO" : "PENDENTE_DE_INTEGRACAO",
+      detail: has(env["VAPID_PRIVATE_KEY"])
+        ? "Chaves presentes; ative por dispositivo em Configurações → E-mail e push."
+        : "Chaves VAPID ainda não geradas.",
     },
     {
       name: "WhatsApp",

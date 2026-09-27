@@ -7,6 +7,7 @@ import { transitionPurchase, type PurchaseStatus } from "@/domain/purchase-state
 import { resolveActors, withActorNames } from "@/lib/actors";
 import { notifyRoles, notifyUser } from "@/lib/notify";
 import { enqueueEmail } from "@/lib/email";
+import { sendPushToUser } from "@/lib/push";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -181,6 +182,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         subject: `Compra #${req.number} ${to === "APROVADA" ? "aprovada" : "rejeitada"}`,
         link: `/compras/${id}`,
       });
+      // Push best-effort (falha silenciosa: in-app + e-mail já cobrem).
+      try {
+        await sendPushToUser(admin, req.requested_by as string, {
+          title: `Compra #${req.number} ${to === "APROVADA" ? "aprovada" : "rejeitada"}`,
+          link: `/compras/${id}`,
+        });
+      } catch {
+        /* offline de push: sem efeito no fluxo */
+      }
     }
     if (to === "CONCLUIDA") {
       await admin.from("purchase_requests").update({ updated_at: new Date().toISOString() }).eq("id", id);
