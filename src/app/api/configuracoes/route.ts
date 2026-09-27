@@ -9,36 +9,36 @@ import { AuthError, requireProfile } from "@/lib/require-auth";
  */
 export const SETTINGS = {
   os_sla_days_default: {
-    label: "SLA padrão da OS (dias)",
+    label: "Prazo padrão da OS (dias)",
     type: "number" as const,
     min: 1,
     max: 365,
     default: 10,
-    consumer: "POST /api/os (sla_days padrão)",
+    consumer: "Toda OS criada sem prazo usa este valor para o SLA",
   },
   stock_expiry_warn_days: {
-    label: "Alerta de validade (dias antes)",
+    label: "Aviso de vencimento (dias antes)",
     type: "number" as const,
     min: 1,
     max: 365,
     default: 30,
-    consumer: "GET /api/estoque/alertas",
+    consumer: "Alerta do Estoque lista lotes que vencem neste prazo",
   },
   files_max_mb: {
-    label: "Tamanho máximo de upload (MB)",
+    label: "Tamanho máximo por arquivo (MB)",
     type: "number" as const,
     min: 1,
     max: 50,
     default: 10,
-    consumer: "POST /api/arquivos",
+    consumer: "Uploads maiores que isso são recusados em Arquivos",
   },
   email_enabled: {
-    label: "E-mail ativo (0=off, 1=on)",
+    label: "Envio de e-mail (0=desligado, 1=ligado)",
     type: "number" as const,
     min: 0,
     max: 1,
     default: 0,
-    consumer: "POST /api/notify/process (worker da fila)",
+    consumer: "Liga/desliga o disparo da fila em Configurações → E-mail",
   },
 } as const;
 
