@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 
 const METRICS = ["chamados_resolvidos", "os_concluidas", "compras_concluidas", "os_no_prazo"] as const;
 
@@ -32,7 +31,7 @@ async function currentValue(admin: ReturnType<typeof createAdminClient>, orgId: 
 export async function GET() {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "reports", "read")) {
+    if (!canSession(session, "reports", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const admin = createAdminClient();

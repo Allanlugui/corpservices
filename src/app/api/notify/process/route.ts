@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { buildEmailBody, buildEmailHtml, resolveEmailConfig, sendViaResend } from "@/lib/email";
 import { getSetting } from "../../configuracoes/route";
 
@@ -16,7 +15,7 @@ const MAX_ATTEMPTS = 5;
 export async function GET() {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "settings", "read")) return fail("FORBIDDEN", "Sem permissao.", 403);
+    if (!canSession(session, "settings", "read")) return fail("FORBIDDEN", "Sem permissao.", 403);
     const admin = createAdminClient();
     const { data } = await admin.from("email_queue").select("status").eq("org_id", session.orgId);
     const counts: Record<string, number> = { PENDING: 0, SENT: 0, FAILED: 0, SKIPPED: 0 };
@@ -36,7 +35,7 @@ export async function POST(request: Request) {
     let orgScope: string | null = null;
     if (!cron || cron !== process.env.CRON_SECRET) {
       const session = await requireProfile();
-      if (!can(session.role, "settings", "update")) return fail("FORBIDDEN", "Sem permissao.", 403);
+      if (!canSession(session, "settings", "update")) return fail("FORBIDDEN", "Sem permissao.", 403);
       orgScope = session.orgId;
     }
     const parsed = z.object({ test_email: z.string().email().max(160).optional() }).safeParse(await request.json().catch(() => ({})));

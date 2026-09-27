@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 const quoteSchema = z.object({
@@ -15,7 +14,7 @@ const quoteSchema = z.object({
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "purchases", "update")) {
+    if (!canSession(session, "purchases", "update")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const { id } = paramsSchema.parse(await params);
@@ -47,7 +46,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const session = await requireProfile();
     // Escolher cotacao e ato do gestor: comprador/estoque cotam, gestor decide (D-17).
-    if (!can(session.role, "purchases", "approve")) {
+    if (!canSession(session, "purchases", "approve")) {
       return fail("FORBIDDEN", "Escolha de cotacao exige gestor.", 403);
     }
     const { id } = paramsSchema.parse(await params);

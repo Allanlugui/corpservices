@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { pageParams } from "@/lib/pagination";
 
 const querySchema = z.object({
@@ -18,7 +17,7 @@ const querySchema = z.object({
 export async function GET(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "tickets", "read")) {
+    if (!canSession(session, "tickets", "read")) {
       return fail("FORBIDDEN", "Sem permissao para ler chamados.", 403);
     }
     const url = new URL(request.url);

@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { getSetting } from "@/app/api/configuracoes/route";
 import { pageParams } from "@/lib/pagination";
 
@@ -20,7 +19,7 @@ const createSchema = z.object({
 export async function GET(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "work_orders", "read")) {
+    if (!canSession(session, "work_orders", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const url = new URL(request.url);
@@ -59,7 +58,7 @@ export async function POST(request: Request) {
   try {
     const session = await requireProfile();
     // Criar OS e gerir; tecnico executa o que lhe e atribuido.
-    if (!can(session.role, "work_orders", "update")) {
+    if (!canSession(session, "work_orders", "update")) {
       return fail("FORBIDDEN", "Sem permissao para criar OS.", 403);
     }
     const body = await request.json().catch(() => null);

@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { transitionPurchase, type PurchaseStatus } from "@/domain/purchase-states";
 import { resolveActors, withActorNames } from "@/lib/actors";
 import { notifyRoles, notifyUser } from "@/lib/notify";
@@ -31,7 +30,7 @@ const ACTION_EVENT: Record<string, string> = {
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "purchases", "read")) {
+    if (!canSession(session, "purchases", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const { id } = paramsSchema.parse(await params);
@@ -65,7 +64,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "purchases", "update")) {
+    if (!canSession(session, "purchases", "update")) {
       return fail("FORBIDDEN", "Sem permissao para movimentar compras.", 403);
     }
     const { id } = paramsSchema.parse(await params);
@@ -82,7 +81,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (parsed.data.action === "approve" || parsed.data.action === "reject") {
       // Aprovar/rejeitar e ato do gestor: IA e tecnico nao decidem.
-      if (!can(session.role, "purchases", "approve")) {
+      if (!canSession(session, "purchases", "approve")) {
         return fail("FORBIDDEN", "Aprovacao exige gestor.", 403);
       }
       if (parsed.data.action === "approve") {

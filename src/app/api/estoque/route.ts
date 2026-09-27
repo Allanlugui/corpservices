@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { incompleteFields } from "@/domain/inventory";
 import { pageParams } from "@/lib/pagination";
 
@@ -38,7 +37,7 @@ async function categoryId(admin: ReturnType<typeof createAdminClient>, orgId: st
 export async function GET(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "inventory", "read")) {
+    if (!canSession(session, "inventory", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const url = new URL(request.url);
@@ -74,7 +73,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "inventory", "update")) {
+    if (!canSession(session, "inventory", "update")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const parsed = productSchema.safeParse(await request.json().catch(() => null));

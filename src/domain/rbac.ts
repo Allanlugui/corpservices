@@ -97,6 +97,22 @@ export function can(role: Role, module: Module, action: Action): boolean {
   );
 }
 
+export interface PermOverlay {
+  module: string;
+  action: string;
+  allowed: boolean;
+}
+
+/**
+ * Autorização com overlay por usuário (Fase B2): deny explícito vence tudo;
+ * allow explícito concede; vazio = papel. Puro e testável.
+ */
+export function canWithOverlay(role: Role, module: Module, action: Action, overlay: PermOverlay[]): boolean {
+  const hit = overlay.find((o) => o.module === module && o.action === action);
+  if (hit) return hit.allowed;
+  return can(role, module, action);
+}
+
 /** Papeis válidos vindos do banco; qualquer outro valor é rejeitado (fail-closed). */
 export function parseRole(value: unknown): Role | null {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value)

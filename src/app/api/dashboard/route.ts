@@ -1,13 +1,12 @@
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 
 /** KPIs reais do dashboard a partir dos tickets (OS/compras entram nas Fases 05/06). */
 export async function GET() {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "tickets", "read")) {
+    if (!canSession(session, "tickets", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const admin = createAdminClient();
@@ -25,10 +24,10 @@ export async function GET() {
       .order("created_at", { ascending: false })
       .limit(8);
     const [{ data: workOrders }, { data: purchases }] = await Promise.all([
-      can(session.role, "work_orders", "read")
+      canSession(session, "work_orders", "read")
         ? admin.from("work_orders").select("id, number, title, status").eq("org_id", session.orgId).order("created_at", { ascending: false }).limit(5)
         : Promise.resolve({ data: [] }),
-      can(session.role, "purchases", "read")
+      canSession(session, "purchases", "read")
         ? admin.from("purchase_requests").select("id, number, status").eq("org_id", session.orgId).order("created_at", { ascending: false }).limit(5)
         : Promise.resolve({ data: [] }),
     ]);

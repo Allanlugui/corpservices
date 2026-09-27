@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 
 const querySchema = z.object({
   entity: z.enum(["tickets", "os", "compras", "estoque", "movimentacoes", "financeiro"]),
@@ -47,7 +46,7 @@ export async function GET(request: Request) {
     if (!parsed.success) return fail("VALIDATION", "Filtros invalidos.", 422);
     const { entity, periodo, status, format } = parsed.data;
     const [module, action] = PERM[entity] as [string, string];
-    if (!can(session.role, module as "tickets", action as "read")) {
+    if (!canSession(session, module as "tickets", action as "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const admin = createAdminClient();

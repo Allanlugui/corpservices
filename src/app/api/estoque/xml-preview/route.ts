@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { findMatches, parseNFe, resolveSupplier } from "@/lib/nfe";
 
 /**
@@ -12,7 +11,7 @@ import { findMatches, parseNFe, resolveSupplier } from "@/lib/nfe";
 export async function POST(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "inventory", "update")) {
+    if (!canSession(session, "inventory", "update")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const parsed = z.object({ xml: z.string().min(50).max(2_000_000) }).safeParse(await request.json().catch(() => null));

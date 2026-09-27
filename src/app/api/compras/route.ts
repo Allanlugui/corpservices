@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { pageParams } from "@/lib/pagination";
 
 const itemSchema = z.object({
@@ -24,7 +23,7 @@ const createSchema = z.object({
 export async function GET(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "purchases", "read")) {
+    if (!canSession(session, "purchases", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const url = new URL(request.url);
@@ -121,7 +120,7 @@ export async function POST(request: Request) {
       const { data: ticket } = await admin.from("tickets").select("id, status").eq("id", ticket_id).eq("org_id", session.orgId).single();
       if (!ticket) return fail("NOT_FOUND", "Ticket nao encontrado.", 404);
       if (ticket.status !== "CONVERTIDO") return fail("INVALID_TICKET", "Compra nasce de ticket CONVERTIDO.", 422);
-      if (!can(session.role, "purchases", "create")) return fail("FORBIDDEN", "Sem permissao.", 403);
+      if (!canSession(session, "purchases", "create")) return fail("FORBIDDEN", "Sem permissao.", 403);
     }
 
     if (origin === "os") {
@@ -130,12 +129,12 @@ export async function POST(request: Request) {
       if (!wo) return fail("NOT_FOUND", "OS nao encontrada.", 404);
       if (wo.status !== "PAUSADA") return fail("INVALID_OS", "Compra vinculada nasce de OS PAUSADA.", 422);
       const isOwnerTech = session.role === "tecnico" && wo.assigned_to === session.userId;
-      if (!isOwnerTech && !can(session.role, "purchases", "create")) {
+      if (!isOwnerTech && !canSession(session, "purchases", "create")) {
         return fail("FORBIDDEN", "Sem permissao.", 403);
       }
     }
 
-    if (origin === "manual" && !can(session.role, "purchases", "create")) {
+    if (origin === "manual" && !canSession(session, "purchases", "create")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
 

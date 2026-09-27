@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 
 const paramsSchema = z.object({ id: z.string().uuid(), orderId: z.string().uuid() });
 
@@ -10,7 +9,7 @@ const paramsSchema = z.object({ id: z.string().uuid(), orderId: z.string().uuid(
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string; orderId: string }> }) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "purchases", "update")) {
+    if (!canSession(session, "purchases", "update")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const { id, orderId } = paramsSchema.parse(await params);

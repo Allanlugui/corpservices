@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { can, parseRole } from "./rbac";
+import { can, canWithOverlay, parseRole } from "./rbac";
 
 describe("RBAC", () => {
   it("admin pode tudo", () => {
@@ -33,5 +33,23 @@ describe("RBAC", () => {
     expect(parseRole("superadmin")).toBeNull();
     expect(parseRole(null)).toBeNull();
     expect(parseRole("gestor")).toBe("gestor");
+  });
+
+  it("overlay vazio = papel (compatível)", () => {
+    expect(canWithOverlay("tecnico", "purchases", "approve", [])).toBe(false);
+    expect(canWithOverlay("tecnico", "work_orders", "execute", [])).toBe(true);
+  });
+
+  it("deny explícito vence o papel", () => {
+    expect(canWithOverlay("gestor", "purchases", "approve", [{ module: "purchases", action: "approve", allowed: false }])).toBe(false);
+    expect(canWithOverlay("admin", "purchases", "approve", [{ module: "purchases", action: "approve", allowed: false }])).toBe(false);
+  });
+
+  it("allow explícito concede além do papel", () => {
+    expect(canWithOverlay("tecnico", "purchases", "approve", [{ module: "purchases", action: "approve", allowed: true }])).toBe(true);
+  });
+
+  it("overlay de outro módulo não afeta", () => {
+    expect(canWithOverlay("tecnico", "purchases", "approve", [{ module: "inventory", action: "update", allowed: true }])).toBe(false);
   });
 });

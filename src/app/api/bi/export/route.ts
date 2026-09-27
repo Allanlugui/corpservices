@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 
 /**
  * BI externo (Fase 21): fatos e dimensões em JSON/CSV para PowerBI,
@@ -23,7 +22,7 @@ function toCsv(rows: Record<string, unknown>[]): string {
 export async function GET(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "reports", "read")) return fail("FORBIDDEN", "Sem permissao.", 403);
+    if (!canSession(session, "reports", "read")) return fail("FORBIDDEN", "Sem permissao.", 403);
     const url = new URL(request.url);
     const parsed = z.object({
       dataset: z.enum(DATASETS),

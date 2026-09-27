@@ -1,7 +1,6 @@
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { expiryAlert, stockAlert } from "@/domain/inventory";
 import { getSetting } from "@/app/api/configuracoes/route";
 
@@ -9,7 +8,7 @@ import { getSetting } from "@/app/api/configuracoes/route";
 export async function GET() {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "inventory", "read")) {
+    if (!canSession(session, "inventory", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const admin = createAdminClient();

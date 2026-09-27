@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { resolveActors } from "@/lib/actors";
 import { buildPdf } from "@/lib/pdf";
 
@@ -26,7 +25,7 @@ export async function GET(request: Request) {
     if (!parsed.success) return fail("VALIDATION", "Parâmetros inválidos.", 422);
     const { entity, id } = parsed.data;
     const [module, action] = PERM[entity] as [string, string];
-    if (!can(session.role, module as "tickets", action as "read")) {
+    if (!canSession(session, module as "tickets", action as "read")) {
       return fail("FORBIDDEN", "Sem permissão.", 403);
     }
     const admin = createAdminClient();

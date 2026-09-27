@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { transitionOs, type OsStatus } from "@/domain/os-states";
 import { resolveActors, withActorNames } from "@/lib/actors";
 import { notifyRoles, notifyUser } from "@/lib/notify";
@@ -46,7 +45,7 @@ const ACTION_EVENT: Record<string, string> = {
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "work_orders", "read")) {
+    if (!canSession(session, "work_orders", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const { id } = paramsSchema.parse(await params);
@@ -85,7 +84,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "work_orders", "update")) {
+    if (!canSession(session, "work_orders", "update")) {
       return fail("FORBIDDEN", "Sem permissao para movimentar OS.", 403);
     }
     const { id } = paramsSchema.parse(await params);

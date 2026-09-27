@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 
 const querySchema = z.object({
   periodo: z.enum(["dia", "semana", "mes", "trimestre", "ano"]).default("mes"),
@@ -21,7 +20,7 @@ const PERIOD_MS: Record<string, number> = {
 export async function GET(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "inventory", "read")) {
+    if (!canSession(session, "inventory", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const url = new URL(request.url);

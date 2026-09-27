@@ -17,12 +17,9 @@ const TITLES: Record<string, string> = {
   "/compras": "Compras",
   "/estoque": "Estoque",
   "/arquivos": "Arquivos",
-  "/relatorios": "Relatórios",
-  "/metas": "Metas",
-  "/notificacoes": "Notificações",
+  "/perfil": "Meu perfil",
   "/auditoria": "Auditoria",
   "/configuracoes": "Configurações",
-  "/fornecedores": "Fornecedores",
 };
 
 function SyncBadge({ sync }: { sync: ReturnType<typeof useSync> }) {
@@ -55,27 +52,38 @@ export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const sync = useSync();
+  const [notifs, setNotifs] = useState<{ id: string; title: string; link: string | null; read_at: string | null; created_at: string }[]>([]);
   const [unread, setUnread] = useState(0);
   const title = TITLES[pathname] ?? "CorpServices";
 
-  useEffect(() => {
-    if (!me) return;
-    fetch("/api/notificacoes?unread=1")
+  function loadNotifs() {
+    fetch("/api/notificacoes")
       .then(async (res) => {
         const json = await res.json();
-        if (!json.error) setUnread(json.data.unread as number);
+        if (!json.error) {
+          setNotifs((json.data.notifications ?? []).slice(0, 5));
+          setUnread(json.data.unread as number);
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        /* sino silencioso */
+      });
+  }
+
+  useEffect(() => {
+    if (!me) return;
+    void loadNotifs();
     const t = setInterval(() => {
-      fetch("/api/notificacoes?unread=1")
-        .then(async (res) => {
-          const json = await res.json();
-          if (!json.error) setUnread(json.data.unread as number);
-        })
-        .catch(() => {});
+      void loadNotifs();
     }, 60000);
     return () => clearInterval(t);
   }, [me, pathname]);
+
+  async function markAll(close: () => void) {
+    await fetch("/api/notificacoes", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ all: true }) }).catch(() => {});
+    close();
+    void loadNotifs();
+  }
 
   async function logout() {
     await fetch("/api/logout", { method: "POST" });
@@ -103,14 +111,50 @@ export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
             Sincronizar
           </button>
         ) : null}
-        <Link href="/notificacoes" aria-label={`Notificações${unread > 0 ? ` (${unread} não lidas)` : ""}`} className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-200/70">
-          <Bell size={18} />
-          {unread > 0 ? (
-            <span aria-hidden className="absolute right-1 top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-700 px-1 text-[10px] font-bold text-white">
-              {unread > 9 ? "9+" : unread}
+        <Dropdown
+          label={
+            <span className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-200/70" role="button" aria-label={`Notificações${unread > 0 ? ` (${unread} não lidas)` : ""}`}>
+              <Bell size={18} />
+              {unread > 0 ? (
+                <span aria-hidden className="absolute right-1 top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-700 px-1 text-[10px] font-bold text-white">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              ) : null}
             </span>
-          ) : null}
-        </Link>
+          }
+        >
+          {(close) => (
+            <div className="grid w-72 gap-1 p-2 text-sm">
+              <p className="px-2 py-1 text-xs font-bold uppercase text-slate-500">Recentes</p>
+              {notifs.length === 0 ? (
+                <p className="px-2 py-2 text-slate-500">Nada por aqui.</p>
+              ) : (
+                notifs.map((n) => (
+                  <Link
+                    key={n.id}
+                    href={n.link ?? "/notificacoes"}
+                    onClick={() => close()}
+                    className={`rounded-lg px-2 py-2 hover:bg-slate-100 ${n.read_at ? "text-slate-600" : "font-semibold"}`}
+                  >
+                    {n.title}
+                  </Link>
+                ))
+              )}
+              <div className="mt-1 flex gap-2 border-t border-slate-100 pt-2">
+                <Link href="/notificacoes" onClick={() => close()} className="flex-1 rounded-lg bg-slate-900 px-3 py-2 text-center text-xs font-bold text-white">
+                  Ver todas
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void markAll(close)}
+                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold"
+                >
+                  Marcar lidas
+                </button>
+              </div>
+            </div>
+          )}
+        </Dropdown>
         <Dropdown
           label={
             <>
@@ -127,6 +171,14 @@ export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
           {(close) => (
             <div className="grid gap-1 p-1 text-sm">
               <p className="px-3 py-2 text-xs text-slate-500">{me?.email}</p>
+              <Link
+                href="/perfil"
+                role="menuitem"
+                onClick={() => close()}
+                className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-left font-medium hover:bg-slate-100"
+              >
+                <User size={16} /> Meu perfil
+              </Link>
               <button
                 type="button"
                 role="menuitem"
@@ -135,9 +187,6 @@ export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
               >
                 <LogOut size={16} /> Sair
               </button>
-              <span className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-slate-400">
-                <User size={16} /> Perfil (Fase 02+)
-              </span>
             </div>
           )}
         </Dropdown>

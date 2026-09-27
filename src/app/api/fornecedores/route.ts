@@ -1,13 +1,12 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 
 export async function GET() {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "inventory", "read")) {
+    if (!canSession(session, "inventory", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const admin = createAdminClient();
@@ -22,7 +21,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "inventory", "update")) {
+    if (!canSession(session, "inventory", "update")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const parsed = z.object({

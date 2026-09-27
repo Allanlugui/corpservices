@@ -1,13 +1,12 @@
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 
 /** Membros da org para atribuição (id, nome, papel). */
 export async function GET() {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "tickets", "read")) {
+    if (!canSession(session, "tickets", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const admin = createAdminClient();

@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { AuthError, requireProfile } from "@/lib/require-auth";
-import { can } from "@/domain/rbac";
+import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { getSetting } from "@/app/api/configuracoes/route";
 
 const OWNER_TABLE: Record<string, string> = {
@@ -34,7 +33,7 @@ async function ownerOrgId(admin: ReturnType<typeof createAdminClient>, ownerType
 export async function GET(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "files", "read")) {
+    if (!canSession(session, "files", "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const url = new URL(request.url);
@@ -85,7 +84,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "files", "update") && !can(session.role, "files", "create")) {
+    if (!canSession(session, "files", "update") && !canSession(session, "files", "create")) {
       // files:* cobre; update/create granular quando existirem.
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
@@ -143,7 +142,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const session = await requireProfile();
-    if (!can(session.role, "files", "delete")) {
+    if (!canSession(session, "files", "delete")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const url = new URL(request.url);
