@@ -5,6 +5,7 @@ import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { transitionOs, type OsStatus } from "@/domain/os-states";
 import { resolveActors, withActorNames } from "@/lib/actors";
 import { notifyRoles, notifyUser } from "@/lib/notify";
+import { appendWorkOrderEvent } from "@/lib/audit-append";
 import { adminFindProfile, assertAssigneeInOrg } from "@/lib/assignment";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
@@ -245,14 +246,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const { error: updateError } = await admin.from("work_orders").update(patch).eq("id", id);
     if (updateError) return fail("DB_UPDATE", "Nao foi possivel atualizar.", 500);
-    await admin.from("work_order_events").insert({
-      work_order_id: id,
+    await appendWorkOrderEvent(admin, id, {
       event: ACTION_EVENT[action],
-      from_status: from,
-      to_status: to,
-      actor_profile_id: session.userId,
+      from,
+      to,
+      actorId: session.userId,
       detail,
-      client_key: clientKey ?? null,
+      clientKey: clientKey ?? null,
     });
     return ok({ id, from, to, sla_remaining_ms: patch["sla_remaining_ms"] ?? wo.sla_remaining_ms });
   } catch (e) {

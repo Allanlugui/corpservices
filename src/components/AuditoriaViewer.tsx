@@ -23,7 +23,7 @@ export function AuditoriaViewer() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [chain, setChain] = useState<{ ok: boolean; checked: number; break_at: string | null } | null>(null);
+  const [chain, setChain] = useState<{ ok: boolean; checked: number; break_at: string | null; business?: { ok: boolean; checked: number; break_at: string | null } } | null>(null);
   const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
@@ -49,9 +49,16 @@ export function AuditoriaViewer() {
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         {chain ? (
-          <Badge tone={chain.ok ? "ok" : "blocked"}>
-            {chain.ok ? `Cadeia íntegra (${chain.checked})` : `Cadeia QUEBRADA em ${chain.break_at}`}
-          </Badge>
+          <>
+            <Badge tone={chain.ok ? "ok" : "blocked"}>
+              {chain.ok ? `Acesso íntegro (${chain.checked})` : `Acesso QUEBRADO em ${chain.break_at}`}
+            </Badge>
+            {chain.business ? (
+              <Badge tone={chain.business.ok ? "ok" : "blocked"}>
+                {chain.business.ok ? `Negócio íntegro (${chain.business.checked})` : `Negócio QUEBRADO em ${chain.business.break_at}`}
+              </Badge>
+            ) : null}
+          </>
         ) : null}
         <button
           type="button"

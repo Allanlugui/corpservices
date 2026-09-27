@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
+import { appendPurchaseEvent } from "@/lib/audit-append";
 import { pageParams } from "@/lib/pagination";
 
 const itemSchema = z.object({
@@ -155,12 +156,11 @@ export async function POST(request: Request) {
     await admin.from("purchase_request_items").insert(
       items.map((i) => ({ request_id: req.id, ...i })),
     );
-    await admin.from("purchase_events").insert({
-      request_id: req.id,
+    await appendPurchaseEvent(admin, req.id as string, {
       event: "SOLICITADA",
-      from_status: null,
-      to_status: "SOLICITADA",
-      actor_profile_id: session.userId,
+      from: null,
+      to: "SOLICITADA",
+      actorId: session.userId,
       detail: { origin, ticket_id: ticket_id ?? null, work_order_id: work_order_id ?? null },
     });
     return ok({ id: req.id, number: req.number }, 201);

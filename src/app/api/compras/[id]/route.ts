@@ -8,6 +8,7 @@ import { notifyRoles, notifyUser } from "@/lib/notify";
 import { enqueueEmail } from "@/lib/email";
 import { enqueueWhats } from "@/lib/whatsapp";
 import { sendPushToUser } from "@/lib/push";
+import { appendPurchaseEvent, appendWorkOrderEvent } from "@/lib/audit-append";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -103,10 +104,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         await admin.from("purchase_requests").update({ rejection_reason: parsed.data.reason }).eq("id", id);
         // Compra da OS rejeitada: OS continua pausada; o tecnico recebe a justificativa no evento.
         if (req.work_order_id) {
-          await admin.from("work_order_events").insert({
-            work_order_id: req.work_order_id,
+          await appendWorkOrderEvent(admin, req.work_order_id as string, {
             event: "COMPRA_REJEITADA",
-            actor_profile_id: session.userId,
+            actorId: session.userId,
             detail: { purchase_id: id, reason: parsed.data.reason },
           });
         }
@@ -131,22 +131,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const { error: updateError } = await admin.from("purchase_requests").update({ status: to }).eq("id", id);
     if (updateError) return fail("DB_UPDATE", "Nao foi possivel atualizar.", 500);
-    await admin.from("purchase_events").insert({
-      request_id: id,
+    await appendPurchaseEvent(admin, id, {
       event: ACTION_EVENT[parsed.data.action],
-      from_status: from,
-      to_status: to,
-      actor_profile_id: session.userId,
+      from,
+      to,
+      actorId: session.userId,
       detail,
     });
 
     // Recebimento de compra vinculada: identifica o componente e avisa na OS (D-16).
     // A retomada e ato do tecnico (botao Retomar), com SLA ainda congelado.
     if (to === "RECEBIDA" && req.work_order_id) {
-      await admin.from("work_order_events").insert({
-        work_order_id: req.work_order_id,
+      await appendWorkOrderEvent(admin, req.work_order_id as string, {
         event: "COMPONENTE_RECEBIDO",
-        actor_profile_id: session.userId,
+        actorId: session.userId,
         detail: { purchase_id: id },
       });
       await admin.from("purchase_orders").update({ status: "RECEBIDO" }).eq("request_id", id);

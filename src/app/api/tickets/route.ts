@@ -4,6 +4,7 @@ import { fail, ok } from "@/lib/api";
 import { type TicketKind } from "@/domain/botia";
 import { resolveBotProvider } from "@/lib/gemini";
 import { notifyRoles } from "@/lib/notify";
+import { appendTicketEvent } from "@/lib/audit-append";
 
 const KIND_VALUES = ["servico", "compra"] as const;
 
@@ -130,13 +131,13 @@ export async function POST(request: Request) {
         output: { ...triage, provider: bot.name },
       });
     }
-    await admin.from("ticket_events").insert({
-      ticket_id: ticket.id,
+    await appendTicketEvent(admin, ticket.id as string, {
       event: "CRIADO",
-      from_status: null,
-      to_status: "NOVO",
+      from: null,
+      to: "NOVO",
+      actorId: null,
       detail: { channel: "portal", ai_suggested_kind: triage.suggestedKind, ai_provider: bot.name },
-      client_key: parsed.data.client_key ?? null,
+      clientKey: parsed.data.client_key ?? null,
     });
     await notifyRoles(admin, org_id, ["gestor", "admin"], {
       kind: "ticket_criado",

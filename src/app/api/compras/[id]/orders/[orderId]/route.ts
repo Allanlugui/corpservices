@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
+import { appendPurchaseEvent } from "@/lib/audit-append";
 
 const paramsSchema = z.object({ id: z.string().uuid(), orderId: z.string().uuid() });
 
@@ -24,10 +25,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!req) return fail("NOT_FOUND", "Compra nao encontrada.", 404);
     const { error } = await admin.from("purchase_orders").update(parsed.data).eq("id", orderId).eq("request_id", id);
     if (error) return fail("DB_UPDATE", "Nao foi possivel atualizar.", 500);
-    await admin.from("purchase_events").insert({
-      request_id: id,
+    await appendPurchaseEvent(admin, id, {
       event: "PEDIDO_ATUALIZADO",
-      actor_profile_id: session.userId,
+      actorId: session.userId,
       detail: { order_id: orderId, ...parsed.data },
     });
     return ok({ ok: true });

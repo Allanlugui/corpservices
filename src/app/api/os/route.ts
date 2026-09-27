@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { getSetting } from "@/app/api/configuracoes/route";
+import { appendWorkOrderEvent } from "@/lib/audit-append";
 import { pageParams } from "@/lib/pagination";
 
 const createSchema = z.object({
@@ -116,19 +117,17 @@ export async function POST(request: Request) {
       .select("id, number")
       .single();
     if (error || !wo) return fail("DB_INSERT", "Nao foi possivel criar a OS.", 500);
-    await admin.from("work_order_events").insert({
-      work_order_id: wo.id,
+    await appendWorkOrderEvent(admin, wo.id as string, {
       event: "CRIADA",
-      from_status: null,
-      to_status: "ABERTA",
-      actor_profile_id: session.userId,
+      from: null,
+      to: "ABERTA",
+      actorId: session.userId,
       detail: { ticket_id: parsed.data.ticket_id ?? null, parent_work_order_id: parsed.data.parent_work_order_id ?? null },
     });
     if (parsed.data.parent_work_order_id) {
-      await admin.from("work_order_events").insert({
-        work_order_id: parsed.data.parent_work_order_id,
+      await appendWorkOrderEvent(admin, parsed.data.parent_work_order_id, {
         event: "OS_FILHA_CRIADA",
-        actor_profile_id: session.userId,
+        actorId: session.userId,
         detail: { child_id: wo.id, child_number: wo.number },
       });
     }

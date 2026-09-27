@@ -5,6 +5,7 @@ import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { TICKET_STATUSES, transition, type TicketStatus } from "@/domain/ticket-states";
 import { resolveActors, withActorNames } from "@/lib/actors";
 import { notifyUser } from "@/lib/notify";
+import { appendTicketEvent } from "@/lib/audit-append";
 import { adminFindProfile, assertAssigneeInOrg } from "@/lib/assignment";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
@@ -125,14 +126,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           link: `/chamados/${id}`,
         });
       }
-      await admin.from("ticket_events").insert({
-        ticket_id: id,
+      await appendTicketEvent(admin, id, {
         event,
-        from_status: from,
-        to_status: to,
-        actor_profile_id: session.userId,
+        from,
+        to,
+        actorId: session.userId,
         detail,
-        client_key: clientKey ?? null,
+        clientKey: clientKey ?? null,
       });
       return ok({ id, from, to, assigned_to: parsed.data.assigned_to });
     } else {
@@ -144,14 +144,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const { error: updateError } = await admin.from("tickets").update({ status: to }).eq("id", id);
     if (updateError) return fail("DB_UPDATE", "Nao foi possivel atualizar.", 500);
-    await admin.from("ticket_events").insert({
-      ticket_id: id,
+    await appendTicketEvent(admin, id, {
       event,
-      from_status: from,
-      to_status: to,
-      actor_profile_id: session.userId,
+      from,
+      to,
+      actorId: session.userId,
       detail,
-      client_key: clientKey ?? null,
+      clientKey: clientKey ?? null,
     });
     return ok({ id, from, to });
   } catch (e) {

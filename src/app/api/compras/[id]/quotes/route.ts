@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
+import { appendPurchaseEvent } from "@/lib/audit-append";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 const quoteSchema = z.object({
@@ -29,10 +30,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       .select("id")
       .single();
     if (error) return fail("DB_INSERT", "Nao foi possivel registrar.", 500);
-    await admin.from("purchase_events").insert({
-      request_id: id,
+    await appendPurchaseEvent(admin, id, {
       event: "COTACAO_ENVIADA",
-      actor_profile_id: session.userId,
+      actorId: session.userId,
       detail: { quote_id: data.id, supplier: parsed.data.supplier },
     });
     return ok({ id: data.id }, 201);
