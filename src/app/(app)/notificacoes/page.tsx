@@ -64,12 +64,27 @@ export default function NotificacoesPage() {
     load();
   }
 
+  async function checkAlerts() {
+    const res = await fetch("/api/notify/check", { method: "POST" });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || json?.error) {
+      alert(json?.error?.message ?? "Sem permissão (gestor/admin).");
+      return;
+    }
+    load();
+  }
+
   return (
     <section>
       <PageHeader
         title="Notificações"
         description="Eventos importantes da operação."
-        actions={rows.some((n) => !n.read_at) ? <Button variant="secondary" size="sm" onClick={() => void markAll()}>Marcar todas como lidas</Button> : undefined}
+        actions={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => void checkAlerts()}>Verificar alertas (SLA/estoque)</Button>
+            {rows.some((n) => !n.read_at) ? <Button variant="secondary" size="sm" onClick={() => void markAll()}>Marcar todas como lidas</Button> : null}
+          </>
+        }
       />
       {loading ? (
         <LoadingState label="Carregando notificações…" />

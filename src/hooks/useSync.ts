@@ -90,6 +90,7 @@ export function useSync() {
   const [syncing, setSyncing] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [remoteTotal, setRemoteTotal] = useState(0);
+  const [rejected, setRejected] = useState(0);
 
   const persist = useCallback((q: OutboxOp[]) => {
     setQueue(q);
@@ -118,6 +119,7 @@ export function useSync() {
     }
     setSyncing(false);
     setLastResult(`Sincronizadas ${applied}, rejeitadas ${rejected}, restantes ${current.length}.`);
+    setRejected((prev) => prev + rejected);
     // Fase 20 pull: o que mudou no servidor desde o último sync.
     try {
       const since = localStorage.getItem("corpservices.sync.last") ?? new Date(0).toISOString();
@@ -138,5 +140,5 @@ export function useSync() {
     return () => clearTimeout(t);
   }, [online, sync]);
 
-  return { online, queue, pending: queue.length, syncing, lastResult, sync, persist, remoteTotal };
+  return { online, queue, pending: queue.length, syncing, lastResult, sync, persist, remoteTotal, rejected };
 }

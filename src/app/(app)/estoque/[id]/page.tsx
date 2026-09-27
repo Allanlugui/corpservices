@@ -10,6 +10,7 @@ import { Timeline } from "@/components/ui/timeline";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/fields";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { ActionLink } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
@@ -162,7 +163,7 @@ function DetailInner({ id }: { id: string }) {
         <PageHeader
           title={p.name}
           description={`${p.quantity} ${p.unit} em saldo${p.location ? ` · ${p.location}` : ""}`}
-          actions={p.cadastro_incompleto ? <Badge tone="pending">CADASTRO INCOMPLETO</Badge> : undefined}
+          actions={<>{p.cadastro_incompleto ? <Badge tone="pending">CADASTRO INCOMPLETO</Badge> : null} <ActionLink href={`/api/pdf?entity=produto&id=${p.id}`}>Baixar PDF</ActionLink></>}
         />
       </div>
       <Tabs

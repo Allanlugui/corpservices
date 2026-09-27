@@ -17,13 +17,14 @@ const TITLES: Record<string, string> = {
   "/compras": "Compras",
   "/estoque": "Estoque",
   "/arquivos": "Arquivos",
-  "/perfil": "Meu perfil",
+  "/equipe": "Equipe",
   "/auditoria": "Auditoria",
+  "/perfil": "Meu perfil",
   "/configuracoes": "Configurações",
 };
 
 function SyncBadge({ sync }: { sync: ReturnType<typeof useSync> }) {
-  const { online, pending, syncing, lastResult, remoteTotal } = sync;
+  const { online, pending, syncing, lastResult, remoteTotal, rejected } = sync;
   return (
     <span className="inline-flex items-center gap-1.5">
       <span
@@ -42,6 +43,11 @@ function SyncBadge({ sync }: { sync: ReturnType<typeof useSync> }) {
       {pending === 0 && remoteTotal > 0 ? (
         <span role="status" title="Mudanças no servidor desde o último sync — recarregue as listas" className="inline-flex items-center rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-900">
           {remoteTotal} NOVIDADE{remoteTotal > 1 ? "S" : ""}
+        </span>
+      ) : null}
+      {rejected > 0 ? (
+        <span role="alert" title={lastResult ?? "Operações rejeitadas pelo servidor"} className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-900">
+          {rejected} ERRO{rejected > 1 ? "S" : ""}
         </span>
       ) : null}
     </span>
