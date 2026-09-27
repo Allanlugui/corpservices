@@ -221,6 +221,11 @@ export default function NovoProdutoPage() {
                       </select>
                     </label>
                   ) : null}
+                  <p className="mt-1 text-xs font-semibold text-slate-700">
+                    Destino: {r.use_existing
+                      ? `unificar a “${item.matches.find((m) => m.product_id === r.use_existing)?.name ?? "produto existente"}” (NÃO cria novo)`
+                      : "criar produto NOVO"}
+                  </p>
                 </div>
               );
             })}

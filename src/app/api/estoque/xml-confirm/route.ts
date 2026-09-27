@@ -64,6 +64,19 @@ export async function POST(request: Request) {
         }
         result.push({ name: product.name as string, action: "movimentado", quantity: item.quantity, cadastro_incompleto: false });
       } else {
+        // Trava anti-duplicata: nome idêntico (case-insensitive) já cadastrado
+        // exige unificação explícita — nunca cria silenciosamente.
+        const { data: dup } = await admin
+          .from("products")
+          .select("id, name, quantity")
+          .eq("org_id", session.orgId)
+          .ilike("name", item.name)
+          .limit(3);
+        if (dup && dup.length > 0) {
+          return fail("DUPLICATE_EXISTS", `“${item.name}” já existe no cadastro. Selecione unificar na revisão.`, 409, {
+            candidates: dup.map((d) => ({ product_id: d.id, name: d.name, quantity: d.quantity })),
+          });
+        }
         const missing = incompleteFields({ name: item.name, unit: item.unit, cost: item.cost_cents || null });
         const { data: product, error } = await admin
           .from("products")

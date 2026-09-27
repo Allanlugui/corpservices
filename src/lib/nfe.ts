@@ -1,6 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
-import { createAdminClient } from "./supabase-admin";
-import { incompleteFields } from "@/domain/inventory";
+import type { createAdminClient } from "./supabase-admin";
+import { incompleteFields } from "../domain/inventory";
 
 export interface NFeItem {
   name: string;
@@ -49,10 +49,30 @@ export interface Match {
   by: "barcode" | "name";
 }
 
+const STOPWORDS = new Set([
+  "de", "da", "do", "das", "dos", "e", "ou", "com", "sem", "para", "por", "em", "no", "na",
+  "un", "unid", "unidade", "pc", "pca", "cx", "kit", "novo", "nova", "original",
+]);
+
 /**
- * Deduplicação (M-02): código de barras (forte) ou nome aproximado.
- * O fornecedor é exibido para julgamento, mas não exclui candidatos:
- * o mesmo produto pode vir de fornecedores diferentes.
+ * Tokens significativos: minúsculo, sem acento, só letras/números,
+ * sem stopwords e sem tokens curtos. Puro e testável.
+ */
+export function nameTokens(name: string): string[] {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length > 2 && !STOPWORDS.has(t));
+}
+
+/**
+ * Deduplicação (M-02): código de barras (forte) ou TODOS os tokens
+ * significativos presentes no nome (AND). O prefixo-ilike anterior
+ * falhava quando a NF-e trazia descrição mais longa que o cadastro
+ * (ex: "...7320 I7/16GB..." vs "...7320") — gerava duplicatas exatas.
+ * O fornecedor é exibido para julgamento, mas não exclui candidatos.
  * Nunca decide sozinho: devolve candidatos para o usuário confirmar.
  */
 export async function findMatches(
@@ -77,19 +97,29 @@ export async function findMatches(
       }));
     }
   }
-  const { data } = await admin
-    .from("products")
-    .select("id, name, quantity, supplier_id, suppliers(name)")
-    .eq("org_id", orgId)
-    .ilike("name", `%${item.name.slice(0, 40)}%`)
-    .limit(5);
-  return (data ?? []).map((p) => ({
-    product_id: p.id as string,
-    name: p.name as string,
-    quantity: Number(p.quantity),
-    supplier: (p.suppliers as unknown as { name: string } | null)?.name ?? null,
-    by: "name" as const,
-  }));
+  const tokens = nameTokens(item.name);
+  if (tokens.length === 0) return [];
+  // Relaxamento progressivo: tenta com até 6 tokens e solta o último
+  // até achar (mínimo 2). Sufixos da NF-e (I7, 16GB...) não bloqueiam.
+  const maxN = Math.min(6, tokens.length);
+  for (let n = maxN; n >= Math.min(2, tokens.length); n--) {
+    let query = admin
+      .from("products")
+      .select("id, name, quantity, supplier_id, suppliers(name)")
+      .eq("org_id", orgId);
+    for (const t of tokens.slice(0, n)) query = query.ilike("name", `%${t}%`);
+    const { data } = await query.limit(5);
+    if (data && data.length > 0) {
+      return data.map((p) => ({
+        product_id: p.id as string,
+        name: p.name as string,
+        quantity: Number(p.quantity),
+        supplier: (p.suppliers as unknown as { name: string } | null)?.name ?? null,
+        by: "name" as const,
+      }));
+    }
+  }
+  return [];
 }
 
 export async function resolveSupplier(
