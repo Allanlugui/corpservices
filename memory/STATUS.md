@@ -135,3 +135,11 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - Segredo RESEND_API_KEY só em env (.env.example documentado). Sem chave = disabled honesto.
 - Gates: lint 0 err · tsc 0 · 51/51 · build OK · commit 5537503 · push OK · deploy READY · health 200.
 - Falta p/ operar: definir RESEND_API_KEY + EMAIL_FROM na Vercel e ativar email_enabled=1.
+
+## FASE 13b — Push VAPID fim-a-fim (CONCLUIDA, 2026-09-27)
+- Chaves VAPID geradas; pública+privada+APP_URL definidas na Vercel via API (redeploy validado).
+- Migration v15 push_subscriptions (RLS default-deny) aplicada via pg-direto.
+- APIs /api/push/subscribe (POST/DELETE/PUT teste) + sender web-push (remove 410) + hook compra aprovada/rejeitada.
+- SW com handler push + click; UI Ativar/Teste/Desativar em Configurações → E-mail e push.
+- Health: E-mail CONFIGURADO + Push CONFIGURADO (presença de chave; envio real = teste in-app).
+- Gates: lint 0 · tsc 0 · 52/52 · build OK · deploy READY.

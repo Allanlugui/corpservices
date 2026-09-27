@@ -127,5 +127,9 @@
 - [x] Push/VAPID: pendente de decisão (chaves VAPID)
 - Falta p/ operar: RESEND_API_KEY + EMAIL_FROM na Vercel; ativar email_enabled=1
 
+## FASE 13b — Push VAPID [CONCLUIDA 2026-09-27]
+- [x] Chaves + subscriptions + sender + SW + UI + health (52/52)
+- [x] Teste real de envio: com o usuário (botões in-app, sessão autenticada)
+
 ## Dependencias externas (BLOQUEADO POR DEPENDENCIA EXTERNA ate providas)
 - [ ] Supabase URL + keys · GitHub remote · Vercel projeto · SMTP/push · provedor LLM · API ERP
