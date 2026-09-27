@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
-import { buildEmailBody, resolveEmailConfig, sendViaResend } from "@/lib/email";
+import { buildEmailBody, buildEmailHtml, resolveEmailConfig, sendViaResend } from "@/lib/email";
 import { getSetting } from "../../configuracoes/route";
 
 const BATCH = 20;
@@ -58,19 +58,28 @@ export async function POST(request: Request) {
     const failed: string[] = [];
     let skippedOrg = 0;
     for (const m of pending ?? []) {
-      const row = m as { id: string; org_id: string; to_email: string; subject: string; body_text: string; link: string | null; attempts: number };
+      const row = m as { id: string; org_id: string; user_id: string | null; to_email: string; subject: string; body_text: string; link: string | null; attempts: number };
       // Respeita o kill-switch por org (email_enabled).
       const enabled = await getSetting(admin, row.org_id, "email_enabled");
       if (enabled !== 1) {
         skippedOrg += 1;
         continue;
       }
+      // Assinatura do operador que originou o disparo (se houver).
+      let sig: { display_name: string; job_title: string; phone: string; body_text: string; image_url: string | null } | null = null;
+      if (row.user_id) {
+        const { data: s } = await admin.from("email_signatures").select("display_name, job_title, phone, body_text, image_url").eq("org_id", row.org_id).eq("user_id", row.user_id).maybeSingle();
+        sig = (s as typeof sig) ?? null;
+      }
+      const text = buildEmailBody(row.body_text, row.link ?? "", cfg.appUrl);
+      const html = buildEmailHtml(row.body_text, row.link ?? "", cfg.appUrl, sig);
       const err = await sendViaResend(
         process.env.RESEND_API_KEY as string,
         cfg.from,
         row.to_email,
         row.subject,
-        buildEmailBody(row.body_text, row.link ?? "", cfg.appUrl),
+        text,
+        html,
       );
       if (err) {
         failed.push(row.id);

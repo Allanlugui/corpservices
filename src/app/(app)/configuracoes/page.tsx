@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, type ChangeEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -257,6 +257,7 @@ function Email() {
         </div>
       </Card>
       <p className="text-xs text-slate-500">Kill-switch por org em Parâmetros → E-mail ativo. Push configurado abaixo.</p>
+      <SignatureCard />
       <PushCard />
     </div>
   );
@@ -268,6 +269,104 @@ function urlBase64ToU8(base64: string): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
+}
+
+function SignatureCard() {
+  const toast = useToast();
+  const [form, setForm] = useState({ display_name: "", job_title: "", phone: "", body_text: "" });
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/notify/signature").then(async (res) => {
+      if (!res.ok || !alive) return;
+      const s = (await res.json()).data.signature;
+      if (s && alive) {
+        setForm({ display_name: s.display_name ?? "", job_title: s.job_title ?? "", phone: s.phone ?? "", body_text: s.body_text ?? "" });
+        setImageUrl(s.image_url ?? null);
+      }
+      if (alive) setLoaded(true);
+    }).catch(() => {
+      if (alive) setLoaded(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function save() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/notify/signature", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Não foi possível salvar.", "error");
+      else toast("Assinatura salva.");
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function upload(file: File) {
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 1_048_576) {
+      toast("Use PNG, JPG ou WEBP de até 1 MB.", "error");
+      return;
+    }
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await fetch("/api/notify/signature", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Falha no envio.", "error");
+      else {
+        setImageUrl(json.data.image_url);
+        toast("Imagem da assinatura atualizada.");
+      }
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!loaded) return <LoadingState label="Carregando assinatura…" />;
+  const set = (k: keyof typeof form) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+  return (
+    <Card title="Minha assinatura (operador)">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Input label="Nome" value={form.display_name} onChange={set("display_name")} placeholder="Seu nome" />
+        <Input label="Cargo" value={form.job_title} onChange={set("job_title")} placeholder="Ex: Comprador" />
+        <Input label="Telefone" value={form.phone} onChange={set("phone")} placeholder="Ex: (11) 99999-9999" />
+        <label className="block text-sm font-medium">Imagem (logo)
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            disabled={busy}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }}
+            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:font-semibold file:text-white"
+          />
+        </label>
+      </div>
+      <label className="mt-3 block text-sm font-medium">Texto da assinatura
+        <textarea value={form.body_text} onChange={set("body_text")} rows={2} placeholder="Ex: CorpServices Group — Suprimentos" className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+      </label>
+      {(form.display_name || imageUrl) ? (
+        <div className="mt-3 rounded-lg border border-slate-200 p-3 text-sm">
+          <p className="mb-2 text-xs text-slate-500">Prévia como sai no e-mail:</p>
+          {imageUrl ? <img src={imageUrl} alt="Assinatura" width={160} style={{ maxWidth: 160, height: "auto" }} /> : null}
+          {form.display_name ? <p><strong>{form.display_name}</strong>{form.job_title ? ` — ${form.job_title}` : ""}</p> : null}
+          {form.phone ? <p>{form.phone}</p> : null}
+          {form.body_text ? <p>{form.body_text}</p> : null}
+        </div>
+      ) : null}
+      <Button variant="secondary" disabled={busy} onClick={() => void save()} className="mt-3">Salvar assinatura</Button>
+    </Card>
+  );
 }
 
 function PushCard() {

@@ -3,7 +3,8 @@ import { createAdminClient } from "./supabase-admin";
 import type { EmailConfig } from "./email-config";
 
 export type { EmailConfig };
-export { buildEmailBody, resolveEmailConfig } from "./email-config";
+export type { EmailSignature } from "./email-config";
+export { buildEmailBody, buildEmailHtml, resolveEmailConfig } from "./email-config";
 
 export interface EmailInput {
   userId: string;
@@ -40,12 +41,12 @@ export async function enqueueEmail(
 }
 
 /** Envio via Resend HTTP (sem SDK). Retorna erro textual ou null. */
-export async function sendViaResend(apiKey: string, from: string, to: string, subject: string, text: string): Promise<string | null> {
+export async function sendViaResend(apiKey: string, from: string, to: string, subject: string, text: string, html?: string): Promise<string | null> {
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, subject, text }),
+      body: JSON.stringify({ from, to, subject, text, ...(html ? { html } : {}) }),
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => "");

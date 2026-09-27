@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildEmailBody, resolveEmailConfig } from "./email-config";
+import { buildEmailBody, buildEmailHtml, resolveEmailConfig } from "./email-config";
 
 describe("email", () => {
   it("disabled sem RESEND_API_KEY (honesto)", () => {
@@ -21,5 +21,25 @@ describe("email", () => {
 
   it("corpo sem link quando ausente", () => {
     expect(buildEmailBody("Oi", "", "")).toBe("Oi");
+  });
+
+  it("html escapa texto e monta assinatura", () => {
+    const html = buildEmailHtml("Olá <b>João</b>", "/compras/1", "https://app.ex", {
+      display_name: "Maria",
+      job_title: "Compradora",
+      phone: "(11) 9999",
+      body_text: "CorpServices",
+      image_url: "https://img/logo.png",
+    });
+    expect(html).toContain("&lt;b&gt;");
+    expect(html).toContain("Maria");
+    expect(html).toContain("https://img/logo.png");
+    expect(html).toContain("https://app.ex/compras/1");
+  });
+
+  it("html sem assinatura quando ausente", () => {
+    const html = buildEmailHtml("Oi", "", "", null);
+    expect(html).toContain("Oi");
+    expect(html).not.toContain("<hr");
   });
 });
