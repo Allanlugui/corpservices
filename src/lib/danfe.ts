@@ -97,21 +97,32 @@ export function extractIssuer(lines: string[]): { issuer: string; issuerDoc: str
 }
 
 /**
- * Itens: linhas com ≥2 valores monetários. Heurística:
- * descrição = trecho antes do primeiro valor; quantidade = primeiro
- * número com decimais antes dos valores; unitário = penúltimo valor,
- * total = último. barcode = sequência de 8–14 dígitos isolada.
+ * Itens: somente linhas da seção de produtos com ≥2 valores monetários.
+ * - Continuação (descrição quebrada em 2 linhas): texto sem valores após
+ *   um item é anexado à descrição do item anterior.
+ * - Rateio/totalizadores (frete, desconto, ICMS...) são ignorados.
+ * Heurística de valores: penúltimo = unitário, último = total;
+ * quantidade = último número antes do primeiro valor.
  */
+const JUNK = /^(valor total|total|desconto|frete|seguro|outras despesas|ipi|icms|pis|cofins|base de c[áa]lculo|duplicata|vencimento|fatura|n[úu]mero|parcela|pagamento|condi[çc][ãa]o)/i;
+
 export function extractItems(lines: string[]): DanfeItem[] {
   const items: DanfeItem[] = [];
   for (const raw of lines) {
     const line = raw.trim();
     if (line.length < 8) continue;
     const money = [...line.matchAll(MONEY_RE)].map((m) => m[1]);
-    if (money.length < 2) continue;
+    if (money.length < 2) {
+      // Possível continuação da descrição do item anterior.
+      const prev = items[items.length - 1];
+      if (prev && !JUNK.test(line) && line.length >= 4 && !/\d{5,}/.test(line)) {
+        prev.name = `${prev.name} ${line}`.slice(0, 120);
+      }
+      continue;
+    }
     const firstMoneyAt = line.indexOf(money[0]);
     const head = line.slice(0, firstMoneyAt).trim();
-    if (head.length < 3) continue;
+    if (head.length < 3 || JUNK.test(head) || JUNK.test(line)) continue;
     const nums = [...head.matchAll(/(\d+(?:[.,]\d+)?)/g)].map((m) => m[1]);
     const barcodeMatch = head.match(/\b(\d{8,14})\b/);
     const barcode = barcodeMatch ? barcodeMatch[1] : null;
@@ -145,7 +156,27 @@ export function parseDanfeText(text: string): DanfeParsed {
   }
   const { issuer, issuerDoc } = extractIssuer(lines);
   if (!issuerDoc) warnings.push("CNPJ do emitente não localizado; confira o fornecedor na revisão.");
-  const items = extractItems(lines);
-  if (items.length === 0) warnings.push("Nenhum item identificado automaticamente; cadastre manualmente ou revise o PDF.");
+  const section = sliceProductSection(lines);
+  if (section.sliced) warnings.push("Leitura restrita à seção de produtos da DANFE; confira cada item.");
+  const items = extractItems(section.lines);
+  if (items.length === 0) warnings.push("Nenhum item identificado automaticamente; cadastre manualmente ou use o XML.");
   return { issuer, issuerDoc, items, warnings };
+}
+
+/**
+ * Isola a tabela de produtos: do marcador "DADOS DO(S) PRODUTO(S)"
+ * até "CÁLCULO DO IMPOSTO"/"VALOR TOTAL"/"DADOS ADICIONAIS".
+ * Fora dessa seção vivem totais, impostos e duplicatas — era isso que
+ * sujava a extração (linhas com 2+ valores que não são itens).
+ */
+export function sliceProductSection(lines: string[]): { lines: string[]; sliced: boolean } {
+  const START = /dados\s+dos?\s+produtos?(\/servi[çc]os?)?/i;
+  const END = /c[áa]lculo\s+do\s+imposto|valor\s+total\s+da\s+nota|dados\s+adicionais|informa[çc][õo]es\s+complementares/i;
+  const HEADER = /c[óo]digo.*descri[çc][ãa]o|descri[çc][ãa]o.*qtd|qtd.*vlr.*unit/i;
+  const start = lines.findIndex((l) => START.test(l));
+  if (start < 0) return { lines, sliced: false };
+  let end = lines.findIndex((l, i) => i > start && END.test(l));
+  if (end < 0) end = lines.length;
+  const section = lines.slice(start + 1, end).filter((l) => !HEADER.test(l));
+  return { lines: section, sliced: true };
 }

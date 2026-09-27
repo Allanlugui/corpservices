@@ -33,10 +33,11 @@ describe("danfe", () => {
     expect(items[1].barcode).toBe("7891234567890");
   });
 
-  it("parse completo com warnings honestos", () => {
+  it("parse completo com aviso de conferência", () => {
     const parsed = parseDanfeText(DANFE);
     expect(parsed.items.length).toBe(2);
-    expect(parsed.warnings.length).toBe(0);
+    expect(parsed.warnings.length).toBe(1);
+    expect(parsed.warnings[0]).toContain("confira");
   });
 
   it("PDF sem texto retorna aviso honesto", () => {
@@ -55,5 +56,28 @@ describe("danfe", () => {
     const lines = text.split("\n");
     expect(lines[0]).toContain("CNPJ");
     expect(lines[1]).toBe("001 PARAFUSO M8");
+  });
+
+  it("DANFE real: só a seção de produtos vira item (totais ignorados)", () => {
+    const doc = [
+      "DANFE Documento Auxiliar",
+      "DISTRIBUIDORA EXEMPLO LTDA",
+      "CNPJ: 12.345.678/0001-90",
+      "FATURA Duplicata 001 Vencimento 10/10/2026 Valor 2.275,00 2.275,00",
+      "CÁLCULO DO IMPOSTO Base de Cálculo do ICMS 2.275,00 Valor do ICMS 409,50",
+      "DADOS DOS PRODUTOS",
+      "CÓDIGO DESCRIÇÃO NCM UN QTD VLR UNIT VLR TOTAL",
+      "001 PARAFUSO SEXTAVADO M8 7318 UN 100 10,00 1.000,00",
+      "DE AÇO INOXIDÁVEL",
+      "002 CIMENTO CP II 2523 SC 50 25,50 1.275,00",
+      "CÁLCULO DO IMPOSTO",
+      "VALOR TOTAL DA NOTA 2.275,00",
+      "DADOS ADICIONAIS Informações Complementares",
+    ].join("\n");
+    const parsed = parseDanfeText(doc);
+    expect(parsed.items.length).toBe(2);
+    expect(parsed.items[0].name).toContain("INOX");
+    expect(parsed.items[0].quantity).toBe(100);
+    expect(parsed.items[1].cost_cents).toBe(2550);
   });
 });

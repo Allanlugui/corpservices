@@ -33,6 +33,6 @@ describe("danfe-pdf-e2e", () => {
     expect(parsed.issuerDoc).toBe("12345678000190");
     expect(parsed.items.length).toBe(2);
     expect(parsed.items[0].name).toContain("PARAFUSO");
-    expect(parsed.warnings.length).toBe(0);
+    expect(parsed.warnings.length).toBe(1);
   });
 });
