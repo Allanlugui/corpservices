@@ -188,3 +188,10 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - Cobertura por fase: 00–11, 12, 06b, 10, 13/13b, 14–17 — tudo executado e validado.
 - Gaps encontrados e fechados nesta auditoria: D-09 hash-chain (Fase 16), backup tabelas novas, destino do convertido (Fase 17).
 - Restam apenas itens fora de escopo: WhatsApp, fotos offline, sync bidirecional total, BI externo.
+
+## FASE 18–21 — Fora do escopo executado (2026-09-27)
+- F18 WhatsApp: fila + Meta Cloud API (template) + telefone próprio + worker + UI + health (migration v19; credenciais pendentes → PENDENTE honesto).
+- F19 Fotos offline: blob em IndexedDB + op file.upload + replay no sync + badge PENDENTE.
+- F20 Sync pull: GET /api/sync/pull (mudanças desde since) + badge NOVIDADES no header.
+- F21 BI externo: /api/bi/export (4 fatos + 2 dimensões, JSON/CSV) + downloads em Relatórios.
+- Gates: lint 0 err · tsc 0 · 81/81 · build OK · deploy READY.
