@@ -157,3 +157,13 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - UI /estoque/novo: aceita .xml ou .pdf; avisos de extração exibidos; legado intacto.
 - E2E real: PDF gerado → pdfjs → parser (2 itens, CNPJ) verde.
 - Gates: lint 0 · tsc 0 · 59/59 · build OK · deploy READY.
+
+## FASE 15 — Anti-duplicata + assinatura profissional (CONCLUIDA, 2026-09-27)
+- Bug real (evidência pg): 4 nomes duplicados via NF-e (ex: Dell 7320 4x).
+- Causa: dedupe por prefixo-ilike de 40 chars não achava cadastro quando a NF-e trazia descrição mais longa.
+- Fix: tokens significativos + relaxamento progressivo (M-02 acha "…7320 I7/16GB" no cadastro "…7320").
+- Trava servidor: nome idêntico existente → 409 com candidatos (nunca duplica silencioso).
+- UI: destino explícito por item ("unificar a X (NÃO cria novo)" vs "criar NOVO").
+- Assinatura: tabela email_signatures + bucket public-assets + HTML profissional (logo, nome, cargo, fone) anexado pelo worker aos disparos do operador; UI com prévia em Configurações → E-mail e push.
+- Migration v16 aplicada via pg-direto.
+- Gates: lint 0 err · tsc 0 · 67/67 · build OK · deploy READY.
