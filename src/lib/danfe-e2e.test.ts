@@ -21,13 +21,13 @@ describe("danfe-pdf-e2e", () => {
     LINES.forEach((l, i) => page.drawText(l, { x: 50, y: 750 - i * 22, size: 11, font }));
     const bytes = await pdf.save();
 
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const doc = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+    const { getDocumentProxy } = await import("unpdf");
+    const doc = await getDocumentProxy(new Uint8Array(bytes));
     const parts: string[] = [];
     for (let p = 1; p <= doc.numPages; p++) {
       const pg = await doc.getPage(p);
       const content = await pg.getTextContent();
-      parts.push(groupByLine(content.items));
+      parts.push(groupByLine(content.items as unknown[]));
     }
     const parsed = parseDanfeText(parts.join("\n"));
     expect(parsed.issuerDoc).toBe("12345678000190");

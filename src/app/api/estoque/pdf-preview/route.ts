@@ -20,18 +20,19 @@ export async function POST(request: Request) {
     if (!parsed.success) return fail("VALIDATION", "PDF ausente.", 422);
     let text: string;
     try {
-      const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      // unpdf: pdfjs configurado p/ serverless (pdfjs puro quebra na Vercel
+      // sem DOMMatrix/canvas). Itens + groupByLine = linhas visuais.
+      const { getDocumentProxy } = await import("unpdf");
       const bytes = Buffer.from(parsed.data.pdf_base64, "base64");
       if (bytes.subarray(0, 5).toString() !== "%PDF-") return fail("PDF_INVALID", "Arquivo nao e um PDF valido.", 422);
-      const doc = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+      const doc = await getDocumentProxy(new Uint8Array(bytes));
       const parts: string[] = [];
       const pages = Math.min(doc.numPages, 10);
       for (let p = 1; p <= pages; p++) {
         const page = await doc.getPage(p);
         const content = await page.getTextContent();
-        parts.push(groupByLine(content.items));
+        parts.push(groupByLine(content.items as unknown[]));
       }
-      await (doc as unknown as { destroy?: () => Promise<void> }).destroy?.();
       text = parts.join("\n");
     } catch {
       return fail("PDF_PARSE", "Nao foi possivel ler o PDF.", 422);
