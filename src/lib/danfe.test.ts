@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractIssuer, extractItems, parseBrNumber, parseDanfeText } from "./danfe";
+import { extractIssuer, extractItems, groupByLine, parseBrNumber, parseDanfeText } from "./danfe";
 
 const DANFE = [
   "DANFE Documento Auxiliar da Nota Fiscal Eletrônica",
@@ -43,5 +43,17 @@ describe("danfe", () => {
     const parsed = parseDanfeText("   \n  ");
     expect(parsed.items.length).toBe(0);
     expect(parsed.warnings.length).toBe(1);
+  });
+
+  it("groupByLine reordena spans fora de ordem em linhas visuais", () => {
+    const spans = [
+      { str: "M8", transform: [1, 0, 0, 1, 200, 500] },
+      { str: "001 PARAFUSO", transform: [1, 0, 0, 1, 50, 500] },
+      { str: "CNPJ: 12.345.678/0001-90", transform: [1, 0, 0, 1, 50, 550] },
+    ];
+    const text = groupByLine(spans);
+    const lines = text.split("\n");
+    expect(lines[0]).toContain("CNPJ");
+    expect(lines[1]).toBe("001 PARAFUSO M8");
   });
 });

@@ -4,7 +4,7 @@ import { fail, ok } from "@/lib/api";
 import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 import { findMatches, resolveSupplier } from "@/lib/nfe";
-import { parseDanfeText } from "@/lib/danfe";
+import { parseDanfeText, groupByLine } from "@/lib/danfe";
 
 /**
  * Prévia de DANFE (PDF) SEM salvar. Mesmo contrato do xml-preview para
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       for (let p = 1; p <= pages; p++) {
         const page = await doc.getPage(p);
         const content = await page.getTextContent();
-        parts.push(content.items.map((it) => ("str" in it ? (it.str as string) : "")).join("\n"));
+        parts.push(groupByLine(content.items));
       }
       await (doc as unknown as { destroy?: () => Promise<void> }).destroy?.();
       text = parts.join("\n");

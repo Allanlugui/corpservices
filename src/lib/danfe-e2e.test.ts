@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PDFDocument, StandardFonts } from "pdf-lib";
-import { parseDanfeText } from "./danfe";
+import { parseDanfeText, groupByLine } from "./danfe";
 
 const LINES = [
   "DANFE Documento Auxiliar da Nota Fiscal Eletronica",
@@ -27,7 +27,7 @@ describe("danfe-pdf-e2e", () => {
     for (let p = 1; p <= doc.numPages; p++) {
       const pg = await doc.getPage(p);
       const content = await pg.getTextContent();
-      parts.push(content.items.map((it) => ("str" in it ? (it.str as string) : "")).join("\n"));
+      parts.push(groupByLine(content.items));
     }
     const parsed = parseDanfeText(parts.join("\n"));
     expect(parsed.issuerDoc).toBe("12345678000190");

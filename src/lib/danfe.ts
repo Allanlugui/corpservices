@@ -36,6 +36,35 @@ export function parseBrNumber(s: string): number {
   return Number.isFinite(v) ? v : 0;
 }
 
+/**
+ * Reconstrói linhas visuais a partir dos spans do pdfjs: agrupa por Y
+ * (tolerância 3pt) e ordena por X. DANFE real não vem em ordem de
+ * leitura no stream do PDF — sem isso, nada é extraído.
+ */
+export function groupByLine(items: unknown[]): string {
+  const rows: { y: number; x: number; str: string }[] = [];
+  for (const it of items) {
+    const r = it as { str?: string; transform?: number[] };
+    if (typeof r.str !== "string" || !r.str.trim()) continue;
+    const t = Array.isArray(r.transform) ? r.transform : [1, 0, 0, 1, 0, 0];
+    rows.push({ y: t[5] ?? 0, x: t[4] ?? 0, str: r.str });
+  }
+  rows.sort((a, b) => b.y - a.y || a.x - b.x);
+  const lines: string[] = [];
+  let current = "";
+  let lastY = Number.POSITIVE_INFINITY;
+  for (const r of rows) {
+    if (Math.abs(r.y - lastY) > 3 && current) {
+      lines.push(current.trim());
+      current = "";
+    }
+    current += (current ? " " : "") + r.str.trim();
+    lastY = r.y;
+  }
+  if (current.trim()) lines.push(current.trim());
+  return lines.join("\n");
+}
+
 function toCents(v: number): number {
   return Math.max(0, Math.round(v * 100));
 }
