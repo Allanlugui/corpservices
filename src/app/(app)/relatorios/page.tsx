@@ -56,6 +56,13 @@ export default function RelatoriosPage() {
     toast("CSV exportado.");
   }
 
+  function exportPdf() {
+    const params = new URLSearchParams({ entity, periodo });
+    if (status) params.set("status", status);
+    window.open(`/api/relatorios/pdf?${params.toString()}`, "_blank", "noopener");
+    toast("PDF gerado.");
+  }
+
   const columns = rows.length > 0 ? Object.keys(rows[0]).slice(0, 6) : [];
 
   return (
@@ -66,7 +73,7 @@ export default function RelatoriosPage() {
         actions={
           <>
             <Button variant="secondary" size="sm" onClick={exportCsv}>Exportar CSV</Button>
-            <Button variant="secondary" size="sm" onClick={() => window.print()}>Imprimir</Button>
+            <Button variant="secondary" size="sm" onClick={exportPdf}>Baixar PDF</Button>
           </>
         }
       />
