@@ -64,6 +64,21 @@ export function FileUploader({
   async function send(file: File) {
     setBusy(true);
     try {
+      // Fase 19: offline → blob no IndexedDB + op na outbox; sobe no sync.
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        const { enqueue, loadQueue, saveQueue, newKey } = await import("@/lib/outbox");
+        const { savePhotoBlob } = await import("@/lib/photo-queue");
+        const key = newKey();
+        await savePhotoBlob(key, file);
+        saveQueue(enqueue(loadQueue(), {
+          key,
+          type: "file.upload",
+          payload: { ownerType, ownerId, folder: currentFolder, blobKey: key, name: file.name, mime: file.type },
+        }));
+        toast("Sem conexão — foto guardada, sobe sozinha ao voltar.");
+        onUploaded?.();
+        return;
+      }
       const form = new FormData();
       form.append("file", file);
       form.append("owner_type", ownerType);
@@ -77,6 +92,25 @@ export function FileUploader({
         onUploaded?.();
       }
     } catch {
+      // Queda no meio do envio: enfileira se dá para guardar local.
+      if (typeof navigator !== "undefined" && !navigator.onLine && file.type.startsWith("image/")) {
+        try {
+          const { enqueue, loadQueue, saveQueue, newKey } = await import("@/lib/outbox");
+          const { savePhotoBlob } = await import("@/lib/photo-queue");
+          const key = newKey();
+          await savePhotoBlob(key, file);
+          saveQueue(enqueue(loadQueue(), {
+            key,
+            type: "file.upload",
+            payload: { ownerType, ownerId, folder: currentFolder, blobKey: key, name: file.name, mime: file.type },
+          }));
+          toast("Conexão caiu — foto guardada, sobe sozinha ao voltar.");
+          onUploaded?.();
+          return;
+        } catch {
+          /* sem IDB: cai no erro abaixo */
+        }
+      }
       toast("Falha de rede.", "error");
     } finally {
       setBusy(false);

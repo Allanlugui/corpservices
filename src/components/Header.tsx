@@ -26,7 +26,7 @@ const TITLES: Record<string, string> = {
 };
 
 function SyncBadge({ sync }: { sync: ReturnType<typeof useSync> }) {
-  const { online, pending, syncing, lastResult } = sync;
+  const { online, pending, syncing, lastResult, remoteTotal } = sync;
   return (
     <span className="inline-flex items-center gap-1.5">
       <span
@@ -40,6 +40,11 @@ function SyncBadge({ sync }: { sync: ReturnType<typeof useSync> }) {
       {pending > 0 ? (
         <span role="status" title={lastResult ?? `${pending} operação(ões) na fila`} className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
           {pending} PENDENTE{pending > 1 ? "S" : ""}
+        </span>
+      ) : null}
+      {pending === 0 && remoteTotal > 0 ? (
+        <span role="status" title="Mudanças no servidor desde o último sync — recarregue as listas" className="inline-flex items-center rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-900">
+          {remoteTotal} NOVIDADE{remoteTotal > 1 ? "S" : ""}
         </span>
       ) : null}
     </span>

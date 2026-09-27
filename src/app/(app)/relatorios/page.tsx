@@ -107,6 +107,25 @@ export default function RelatoriosPage() {
             emptyDescription="Ajuste entidade, período ou status."
           />
           <p className="mt-2 text-xs text-slate-500 print:hidden">{rows.length} linha(s). Documentos individuais em PDF ficam nos detalhes.</p>
+          <details className="mt-4 print:hidden">
+            <summary className="cursor-pointer text-sm font-semibold text-brand-700">BI externo (PowerBI/Looker/planilha)</summary>
+            <ul className="mt-2 grid gap-1 text-sm">
+              {[
+                ["fato_chamados", "Chamados"],
+                ["fato_os", "Ordens de serviço"],
+                ["fato_compras", "Compras"],
+                ["fato_movimentos", "Movimentações de estoque"],
+                ["dim_produtos", "Produtos"],
+                ["dim_fornecedores", "Fornecedores"],
+              ].map(([ds, label]) => (
+                <li key={ds}>
+                  <a className="font-medium text-brand-700 hover:underline" href={`/api/bi/export?dataset=${ds}&format=csv`}>
+                    Baixar {label} (CSV)
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
         </div>
       )}
     </section>

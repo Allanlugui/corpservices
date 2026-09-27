@@ -5,7 +5,7 @@
  * inválidas no replay são descartadas como rejeitadas, nunca aplicadas à força.
  */
 
-export type OpType = "ticket.create" | "ticket.transition" | "os.transition";
+export type OpType = "ticket.create" | "ticket.transition" | "os.transition" | "file.upload";
 
 export interface OutboxOp {
   key: string;
