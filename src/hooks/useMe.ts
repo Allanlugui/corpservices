@@ -6,6 +6,9 @@ export interface Me {
   email: string;
   role: string;
   displayName: string | null;
+  overlay?: { module: string; action: string; allowed: boolean }[];
+  avatarUrl?: string;
+  mustReset?: boolean;
 }
 
 /** Perfil da sessão (papel para RBAC da navegação). Null = carregando ou sem sessão. */

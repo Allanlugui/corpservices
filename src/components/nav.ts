@@ -5,6 +5,7 @@ import {
   Package,
   Settings,
   ShoppingCart,
+  Users,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -46,5 +47,6 @@ export const NAV: NavItem[] = [
   },
   { href: "/estoque", label: "Estoque", icon: Package, perm: { module: "inventory", action: "read" } },
   { href: "/arquivos", label: "Arquivos", icon: Archive, perm: { module: "files", action: "read" } },
+  { href: "/equipe", label: "Equipe", icon: Users, perm: { module: "settings", action: "update" } },
   { href: "/configuracoes", label: "Configurações", icon: Settings, perm: { module: "settings", action: "read" } },
 ];

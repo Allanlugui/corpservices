@@ -32,6 +32,17 @@ function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ event: "LOGIN" }),
       }).catch(() => {});
+      // Primeiro acesso com senha provisória → troca obrigatória.
+      try {
+        const me = await fetch("/api/me");
+        if (me.ok && (await me.json()).data?.mustReset) {
+          router.push("/redefinir-senha?first=1");
+          router.refresh();
+          return;
+        }
+      } catch {
+        /* segue fluxo normal */
+      }
       router.push(searchParams.get("next") ?? "/");
       router.refresh();
     } finally {

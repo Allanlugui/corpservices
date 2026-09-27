@@ -158,9 +158,13 @@ export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
         <Dropdown
           label={
             <>
-              <span aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
-                {(me?.displayName ?? me?.email ?? "?").slice(0, 1).toUpperCase()}
-              </span>
+              {me?.avatarUrl ? (
+                <img src={me.avatarUrl} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover" />
+              ) : (
+                <span aria-hidden className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+                  {(me?.displayName ?? me?.email ?? "?").slice(0, 1).toUpperCase()}
+                </span>
+              )}
               <span className="hidden max-w-40 truncate text-left text-sm md:block">
                 <span className="block truncate font-semibold">{me?.displayName ?? me?.email ?? "…"}</span>
                 <span className="block truncate text-xs text-slate-500">{me?.role ?? ""}</span>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { NAV } from "./nav";
-import { can, parseRole } from "@/domain/rbac";
+import { canWithOverlay, parseRole } from "@/domain/rbac";
 import { Tooltip } from "./ui/tooltip";
 import { IconButton } from "./ui/button";
 import type { Me } from "@/hooks/useMe";
@@ -27,7 +27,8 @@ export function Sidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const role = parseRole(me?.role);
-  const items = NAV.filter((item) => (role ? can(role, item.perm.module, item.perm.action) : false));
+  const overlay = me?.overlay ?? [];
+  const items = NAV.filter((item) => (role ? canWithOverlay(role, item.perm.module, item.perm.action, overlay) : false));
 
   return (
     <div className={`flex h-full flex-col bg-slate-900 text-slate-200 ${collapsed ? "w-16" : "w-60"}`}>
