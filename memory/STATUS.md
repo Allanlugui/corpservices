@@ -96,23 +96,32 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - Falta: commit/push/prod desta etapa + compra vinculada a OS (aguarda Fase 06).
 - Producao: API /api/os 200 (n=1) + /os com UI nova no ar. FASE 05 CONCLUIDA.
 
-## FASE 08 � Arquivos (CONCLUIDA, 2026-09-26)
+## FASE 08 � Arquivos (CONCLUIDA, 2026-09-26)
 - Migration v8 (bucket privado sem acesso direto + files) + APIs upload/lista signed-URL/remove.
 - Explorador /arquivos (OS + pastas + filtro) + aba Arquivos na OS + foto por item de checklist.
 - Enforcement: concluir OS exige foto em item done+requires_photo (422).
 - M-01 preview + M-02 dedupe (barcode/nome, fornecedor exibido) + confirm em lote.
-- RBAC: files:create p/ todos operacionais; delete s� gestor/admin (D-20).
-- E2E: bloqueio, upload, signed, preview+unifica��o OK � prod xml-preview 200 + /arquivos no ar.
+- RBAC: files:create p/ todos operacionais; delete s� gestor/admin (D-20).
+- E2E: bloqueio, upload, signed, preview+unifica��o OK � prod xml-preview 200 + /arquivos no ar.
 
-## FASE 09 � Offline-first v1 (CONCLUIDA, 2026-09-26)
+## FASE 09 � Offline-first v1 (CONCLUIDA, 2026-09-26)
 - Migration v9 (client_key em tickets + eventos, unique+indices).
 - Outbox localStorage + chaves UUID + sync engine (servidor vence, replay idempotente).
 - Portal cria na fila offline; acoes Chamados/OS enfileiram; header com PENDENTES + sincronizar.
-- E2E: reenvio nao duplica (ticket #12, evento unico) � 38 testes � deploy READY.
+- E2E: reenvio nao duplica (ticket #12, evento unico) � 38 testes � deploy READY.
 - Limite honesto: fila de operacoes (fotos offline e sync bidirecional completo ficam p/ evolucao).
 
-## FASE 12 � VALIDACAO FINAL (CONCLUIDA, 2026-09-26)
+## FASE 12 � VALIDACAO FINAL (CONCLUIDA, 2026-09-26)
 - Migration app_settings verificada via REST (sem reexecutar).
 - Settings em producao: GET/PATCH/persistencia/ranges/keys/auditoria/consumidor SLA OK.
 - Gates: lint 0, tsc 0, 43/43, build OK. Smoke: health/login/dashboard/settings/assignment/paginas 200.
 - FASE 12 CONCLUIDA.
+
+## FASE 06b — Fluxo de compras + financeiro (CONCLUIDA, 2026-09-27)
+- COT-01: recibo de pagamento (folder `recibo_pagamento`) + tratativa do pedido (prazo, rastreio) via PATCH `/api/compras/[id]/orders/[orderId]` + evento PEDIDO_ATUALIZADO.
+- COT-02: troca de fornecedor APROVADA/NEGOCIACAO/PAGAMENTO → COTACAO (cancela pedidos ABERTO, desmarca chosen, re-aprovação obrigatória).
+- NF-01: aba Pedidos lista NFs do pedido; XML auto-salvo já linkado ao produto.
+- FIN-01: relatório entidade `financeiro` (pedidos por situação + estoque valorizado).
+- FIN-02: cards financeiros no dashboard (admin/gestor).
+- Migration v13 aplicada via pg-direto (delivery_deadline, tracking_code, notes, folder recibo).
+- Gates: lint 0 · tsc 0 · 47/47 · build OK · commit c7db8ee · push OK · deploy READY · health 200.
