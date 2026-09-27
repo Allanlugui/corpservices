@@ -150,3 +150,10 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - `GeminiProvider` atrás de `AIProvider`: JSON estrito validado, fallback determinístico em qualquer falha; provedor gravado em ai_actions + ticket_events.
 - Health: Provedor IA (LLM) = CONFIGURADO em produção.
 - Gates: lint 0 · tsc 0 · 53/53 · build OK · deploy READY.
+
+## FASE 14 — Entrada via NF-e, XML ou PDF (CONCLUIDA, 2026-09-27)
+- Decisão humana: MANTER entrada-xml legada + 3 fontes de entrada.
+- Novo: `lib/danfe.ts` (parser DANFE best-effort + warnings honestos) + POST /api/estoque/pdf-preview (pdfjs, máx 10 págs) — mesmo contrato do xml-preview, mesma revisão M-01/M-02, mesmo xml-confirm.
+- UI /estoque/novo: aceita .xml ou .pdf; avisos de extração exibidos; legado intacto.
+- E2E real: PDF gerado → pdfjs → parser (2 itens, CNPJ) verde.
+- Gates: lint 0 · tsc 0 · 59/59 · build OK · deploy READY.

@@ -139,5 +139,5 @@
 - [x] LLM: RESOLVIDO (Gemini)
 - [x] Multi-org: RESOLVIDO (single-tenant, D-25)
 - [x] ERP: RESOLVIDO (sem ERP, D-27)
-- [ ] Entrada-xml legada: manter ou remover (última pendência humana)
+- [ ] Entrada-xml legada: RESOLVIDO — mantida + PDF DANFE somado (Fase 14)
 - [ ] Supabase URL + keys · GitHub remote · Vercel projeto · SMTP/push · provedor LLM · API ERP
