@@ -132,3 +132,18 @@
 - Escolha: 5 visões reaproveitando endpoints; 3 parâmetros com consumidor real + auditoria; assertAssigneeInOrg puro + checagem nas rotas.
 - Divergência auditoria: entrada-xml legada MANTIDA (decisão humana pendente, item 5).
 - Reversao: baixa.
+
+## D-25 — Operação single-tenant (2026-09-27, decisão humana)
+- Contexto: dúvida single vs multi-org.
+- Escolha: UMA empresa. Infra org_id/RLS MANTIDA (zero breaking, reversível); sem onboarding multi-org.
+- Reversao: baixa (infra já suporta; só falta fluxo de criação de orgs).
+
+## D-26 — BotIA LLM via Gemini com fallback (2026-09-27, decisão humana)
+- Contexto: Fase 10 aguardava provedor; usuário escolheu Gemini e forneceu chave.
+- Escolha: `GeminiProvider` atrás de `AIProvider` (gemini-2.0-flash, JSON estrito, temp 0.2); qualquer falha → determinístico; provedor registrado em ai_actions/eventos. Chave só em env Vercel (sensitive).
+- Reversao: baixa (remover chave volta ao determinístico).
+
+## D-27 — Sem ERP por ora (2026-09-27, decisão humana)
+- Contexto: Fase 11 aguardava docs; usuário declarou sem ERP.
+- Escolha: mantém MockERPAdapter + health PENDENTE_DE_INTEGRACAO honesto.
+- Reversao: baixa.

@@ -131,5 +131,13 @@
 - [x] Chaves + subscriptions + sender + SW + UI + health (52/52)
 - [x] Teste real de envio: com o usuário (botões in-app, sessão autenticada)
 
+## FASE 10 — BotIA LLM [CONCLUIDA 2026-09-27]
+- [x] GeminiProvider + fallback + trilha + health (53/53)
+
 ## Dependencias externas (BLOQUEADO POR DEPENDENCIA EXTERNA ate providas)
+- [x] E-mail/push: RESOLVIDO (Resend + VAPID)
+- [x] LLM: RESOLVIDO (Gemini)
+- [x] Multi-org: RESOLVIDO (single-tenant, D-25)
+- [x] ERP: RESOLVIDO (sem ERP, D-27)
+- [ ] Entrada-xml legada: manter ou remover (última pendência humana)
 - [ ] Supabase URL + keys · GitHub remote · Vercel projeto · SMTP/push · provedor LLM · API ERP

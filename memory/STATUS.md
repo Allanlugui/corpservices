@@ -143,3 +143,10 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - SW com handler push + click; UI Ativar/Teste/Desativar em Configurações → E-mail e push.
 - Health: E-mail CONFIGURADO + Push CONFIGURADO (presença de chave; envio real = teste in-app).
 - Gates: lint 0 · tsc 0 · 52/52 · build OK · deploy READY.
+
+## FASE 10 — BotIA LLM/Gemini v1 (CONCLUIDA, 2026-09-27)
+- Decisões humanas: Gemini (D-26), single-tenant (D-25), sem ERP (D-27).
+- Chave GEMINI_API_KEY definida na Vercel via API (sensitive, production).
+- `GeminiProvider` atrás de `AIProvider`: JSON estrito validado, fallback determinístico em qualquer falha; provedor gravado em ai_actions + ticket_events.
+- Health: Provedor IA (LLM) = CONFIGURADO em produção.
+- Gates: lint 0 · tsc 0 · 53/53 · build OK · deploy READY.
