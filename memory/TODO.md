@@ -11,15 +11,15 @@
 - [x] 00.5 Maquinas de estado v1
 - [x] 00.6 RBAC v1
 - [x] 00.7 Estrategia offline / BotIA / ERP / auditoria / PDF / notificacoes
-- [ ] 00.8 Commit local (sem remote — push pendente)
-- [ ] 00.9 AVAL HUMANO para encerrar Fase 00 e autorizar Fase 01
+- [x] 00.8 Commit local (sem remote — push pendente)
+- [x] 00.9 AVAL HUMANO para encerrar Fase 00 e autorizar Fase 01
 
 ## FASE 01 — Fundacao tecnica [CONCLUIDA local]
 - [x] 01.1 Scaffold Next.js + TS strict + Tailwind + ESLint + vitest
 - [x] 01.2 PWA (manifest + SW ciclo-de-vida) + layout + navegacao + design system + health + dashboard factual
 - [x] 01.3 Supabase estrutura plugavel fail-closed (conexao real BLOQUEADA sem credenciais — P-02)
 - [x] 01.4 Gates verdes (5/5, tsc 0, lint 0, build OK, 9 rotas 200) + commit local
-- [ ] 01.5 AVAL HUMANO para encerrar Fase 01 e autorizar Fase 02
+- [x] 01.5 AVAL HUMANO para encerrar Fase 01 e autorizar Fase 02
 
 ## FASE 02 — Identidade, usuarios e permissoes [PARCIAL — falta apply da migration]
 - [x] 02.1 Segredos em `.env.local` + Auth GoTrue VALIDADA
@@ -108,9 +108,9 @@
 - Gates: lint 0 · tsc 0 · 47/47 · build OK
 ## FASE 09 — Offline-first v1 [CONCLUIDA 2026-09-26]
 - [x] Migration v9 + outbox + sync + idempotencia (38 testes, E2E sem duplicar)
-- [ ] 10 BotIA LLM (hoje só determinístico)
-- [ ] 11 ERP real (quando houver docs)
-- [ ] 12 Notificações + Metas + PDF + Auditoria hash-chain + Relatórios export + Backup honesto + dashboards por perfil + configurações
+- [x] 10 BotIA LLM (Gemini — Fase 10 concluída)
+- [x] 11 ERP real (decisão: sem ERP — D-27)
+- [x] 12 Notificações + Metas + PDF + Auditoria hash-chain + Relatórios export + Backup honesto + dashboards por perfil + configurações (Fase 12 + D-09 Fase 16)
 ## FASE 12 — parcial [EM ANDAMENTO]
 - [x] Notificações in-app (migration, emissão, sino, central)
 - [x] M-03 Auditoria/logs em Configurações
@@ -134,10 +134,10 @@
 ## FASE 10 — BotIA LLM [CONCLUIDA 2026-09-27]
 - [x] GeminiProvider + fallback + trilha + health (53/53)
 
-## Dependencias externas (BLOQUEADO POR DEPENDENCIA EXTERNA ate providas)
+## Dependencias externas (todas RESOLVIDAS 2026-09-27)
+- [x] Supabase URL + keys · GitHub remote · Vercel projeto · Resend/push-VAPID · Gemini · (ERP: sem)
 - [x] E-mail/push: RESOLVIDO (Resend + VAPID)
 - [x] LLM: RESOLVIDO (Gemini)
 - [x] Multi-org: RESOLVIDO (single-tenant, D-25)
 - [x] ERP: RESOLVIDO (sem ERP, D-27)
-- [ ] Entrada-xml legada: RESOLVIDO — mantida + PDF DANFE somado (Fase 14)
-- [ ] Supabase URL + keys · GitHub remote · Vercel projeto · SMTP/push · provedor LLM · API ERP
+- [x] Entrada-xml legada: RESOLVIDO — mantida + PDF DANFE somado (Fase 14)

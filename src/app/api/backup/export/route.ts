@@ -37,6 +37,11 @@ const TABLES = [
   "ai_actions",
   "audit_events",
   "system_logs",
+  "app_settings",
+  "goals",
+  "email_queue",
+  "email_signatures",
+  "push_subscriptions",
 ];
 
 /**

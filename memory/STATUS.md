@@ -167,3 +167,11 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - Assinatura: tabela email_signatures + bucket public-assets + HTML profissional (logo, nome, cargo, fone) anexado pelo worker aos disparos do operador; UI com prévia em Configurações → E-mail e push.
 - Migration v16 aplicada via pg-direto.
 - Gates: lint 0 err · tsc 0 · 67/67 · build OK · deploy READY.
+
+## FASE 16 — Auditoria D-09 + unificação + escopo total (2026-09-27)
+- Unificação autorizada: 4 conjuntos zerados (7320 q=10, 7420 q=4, 5420 q=2, Oleo q=12); histórico/arquivos reapontados; auditado em system_logs.
+- GAP REAL ENCONTRADO NA AUDITORIA: D-09 decidida mas nunca implementada (sem hash + RLS permitia UPDATE/DELETE).
+- Fix: migration v17 (previous_hash/hash/version + backfill v1 por org + RLS só-leitura), lib audit-chain (5 testes), appendAuditEvent nos 2 pontos de escrita, GET /api/auditoria/verify, botão Verificar cadeia na UI. Cadeia v1 validada via pg (1 linha OK).
+- Backup: tabelas novas incluídas (app_settings, goals, email_queue, email_signatures, push_subscriptions).
+- TODO higienizado: zero checkboxes abertos.
+- ESCOPO: todo o planejado executado. Fora de escopo (informativo): WhatsApp, fotos offline, sync bidirecional total, BI externo.
