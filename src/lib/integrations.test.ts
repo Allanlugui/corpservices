@@ -8,8 +8,14 @@ describe("getIntegrations", () => {
     expect(byName.get("Supabase (banco + auth)")).toBe("NAO_CONFIGURADO");
     expect(byName.get("ERP")).toBe("PENDENTE_DE_INTEGRACAO");
     expect(byName.get("Provedor IA (LLM)")).toBe("PENDENTE_DE_INTEGRACAO");
-    expect(byName.get("E-mail / Push")).toBe("NAO_CONFIGURADO");
+    expect(byName.get("E-mail (Resend)")).toBe("NAO_CONFIGURADO");
+    expect(byName.get("Push (VAPID)")).toBe("PENDENTE_DE_INTEGRACAO");
     expect(byName.get("WhatsApp")).toBe("PENDENTE_DE_INTEGRACAO");
+  });
+
+  it("reconhece resend com chave presente", () => {
+    const items = getIntegrations({ RESEND_API_KEY: "re_x" });
+    expect(items.find((i) => i.name.startsWith("E-mail"))?.status).toBe("CONFIGURADO");
   });
 
   it("reconhece supabase apenas com as duas variaveis presentes", () => {

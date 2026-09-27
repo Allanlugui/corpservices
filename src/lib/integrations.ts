@@ -40,9 +40,16 @@ export function getIntegrations(
       detail: "BotIA opera em modo deterministico ate um provedor ser configurado.",
     },
     {
-      name: "E-mail / Push",
-      status: "NAO_CONFIGURADO",
-      detail: "Nenhum provedor de envio configurado.",
+      name: "E-mail (Resend)",
+      status: has(env["RESEND_API_KEY"]) ? "CONFIGURADO" : "NAO_CONFIGURADO",
+      detail: has(env["RESEND_API_KEY"])
+        ? "Chave presente; validade real só no envio (aba E-mail → teste)."
+        : "Defina RESEND_API_KEY. Sem isso, a fila acumula e nada é enviado.",
+    },
+    {
+      name: "Push (VAPID)",
+      status: "PENDENTE_DE_INTEGRACAO",
+      detail: "Infra de push prevista; chaves VAPID ainda não geradas.",
     },
     {
       name: "WhatsApp",
