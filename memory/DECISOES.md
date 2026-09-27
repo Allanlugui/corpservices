@@ -147,3 +147,18 @@
 - Contexto: Fase 11 aguardava docs; usuário declarou sem ERP.
 - Escolha: mantém MockERPAdapter + health PENDENTE_DE_INTEGRACAO honesto.
 - Reversao: baixa.
+
+## D-28 — Metas removidas por ordem humana (2026-09-27, diverge do §28/§34)
+- Contexto: usuário declarou o módulo sem propósito.
+- Escolha: UI + API removidas; tabela `goals` dormente no banco (sem RLS alterada, sem escrita).
+- Reversao: baixa (recriar UI sobre a tabela).
+
+## D-29 — Nav enxuta por ordem humana (2026-09-27, diverge do §34)
+- Contexto: usuário pediu menu menor.
+- Escolha: Notificações/Relatórios/Fornecedores fora do menu (rotas vivas); Auditoria via Config; Fornecedores filho de Compras. §34 registrado como divergência consciente.
+- Reversao: trivial (nav.ts).
+
+## D-30 — OS sem status RESUMED persistido (2026-09-27, diverge parcial §12)
+- Contexto: retomada modelada como evento (D-15).
+- Escolha: PAUSADA→EM_EXECUCAO direto; retomada é evento com SLA antes/depois. Equivalente funcional.
+- Reversao: média.
