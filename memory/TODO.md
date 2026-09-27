@@ -122,5 +122,10 @@
 - [x] P1-02 Parâmetros (3 com consumidor + auditoria) — migration APLICADA e validada (P-08 resolvido)
 - [x] P2 Assignment validado server-side + 5 testes
 
+## FASE 13 — E-mail/Resend v1 [CONCLUIDA 2026-09-27]
+- [x] Migration v14 email_queue + worker + kill-switch email_enabled + aba E-mail + testes (51/51)
+- [x] Push/VAPID: pendente de decisão (chaves VAPID)
+- Falta p/ operar: RESEND_API_KEY + EMAIL_FROM na Vercel; ativar email_enabled=1
+
 ## Dependencias externas (BLOQUEADO POR DEPENDENCIA EXTERNA ate providas)
 - [ ] Supabase URL + keys · GitHub remote · Vercel projeto · SMTP/push · provedor LLM · API ERP

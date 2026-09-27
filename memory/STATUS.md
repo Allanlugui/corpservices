@@ -125,3 +125,13 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - FIN-02: cards financeiros no dashboard (admin/gestor).
 - Migration v13 aplicada via pg-direto (delivery_deadline, tracking_code, notes, folder recibo).
 - Gates: lint 0 · tsc 0 · 47/47 · build OK · commit c7db8ee · push OK · deploy READY · health 200.
+
+## FASE 13 — E-mail/Resend v1 (CONCLUIDA, 2026-09-27)
+- Decisão humana: e-mail via Resend (HTTP, sem SDK). Push/VAPID segue pendente.
+- Migration v14 email_queue (RLS default-deny, só worker) aplicada via pg-direto.
+- Enfileira em compra APROVADA/REJEITADA (espelha in-app); SKIPPED honesto sem e-mail no Auth.
+- Worker POST /api/notify/process (manual gestor/admin ou CRON_SECRET) + GET contadores; teste direto.
+- Settings email_enabled (kill-switch, default 0) + aba E-mail em Configurações (provedor, fila, processar, teste).
+- Segredo RESEND_API_KEY só em env (.env.example documentado). Sem chave = disabled honesto.
+- Gates: lint 0 err · tsc 0 · 51/51 · build OK · commit 5537503 · push OK · deploy READY · health 200.
+- Falta p/ operar: definir RESEND_API_KEY + EMAIL_FROM na Vercel e ativar email_enabled=1.
