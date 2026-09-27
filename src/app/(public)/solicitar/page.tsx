@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/fields";
 import { enqueue, loadQueue, newKey, saveQueue } from "@/lib/outbox";
+import { BotChat } from "@/components/BotChat";
 
 type Kind = "servico" | "compra";
 
@@ -43,6 +44,7 @@ export default function SolicitarPage() {
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<Created | null>(null);
   const [queued, setQueued] = useState(false);
+  const [botMode, setBotMode] = useState(true);
   const [locations, setLocations] = useState<{ id: string; path: string }[]>([]);
   const [locationId, setLocationId] = useState("");
   const [locationDetail, setLocationDetail] = useState("");
@@ -141,7 +143,21 @@ export default function SolicitarPage() {
 
   return (
     <section className="mx-auto max-w-xl">
-      <PageHeader title="Nova solicitação" description={`Etapa ${Math.min(step + 1, totalSteps)} de ${totalSteps}`} />
+      <PageHeader title="Nova solicitação" description={botMode ? "Converse com o assistente" : `Etapa ${Math.min(step + 1, totalSteps)} de ${totalSteps}`} />
+      {!created && !queued ? (
+        <div className="mb-3 flex gap-2" role="tablist" aria-label="Modo de abertura">
+          <button type="button" role="tab" aria-selected={botMode} onClick={() => setBotMode(true)} className={`min-h-11 flex-1 rounded-full px-4 py-2 text-sm font-semibold ${botMode ? "bg-slate-900 text-white" : "border border-slate-300 bg-white"}`}>
+            Assistente
+          </button>
+          <button type="button" role="tab" aria-selected={!botMode} onClick={() => setBotMode(false)} className={`min-h-11 flex-1 rounded-full px-4 py-2 text-sm font-semibold ${!botMode ? "bg-slate-900 text-white" : "border border-slate-300 bg-white"}`}>
+            Formulário
+          </button>
+        </div>
+      ) : null}
+      {botMode && !created && !queued ? (
+        <BotChat locations={locations} onDone={(c) => setCreated({ number: c.number, tracking_token: "", tracking_url: c.tracking_url, suggested_kind: kind ?? "servico", missing_fields: c.missing_fields })} />
+      ) : null}
+      {!botMode ? (
       <Card>
         <form
           onSubmit={step === totalSteps - 1 ? submit : (e) => { e.preventDefault(); if (canAdvance()) setStep(step + 1); }}
@@ -215,6 +231,7 @@ export default function SolicitarPage() {
           </div>
         </form>
       </Card>
+      ) : null}
     </section>
   );
 }
