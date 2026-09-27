@@ -18,6 +18,11 @@ describe("getIntegrations", () => {
     expect(items.find((i) => i.name.startsWith("E-mail"))?.status).toBe("CONFIGURADO");
   });
 
+  it("reconhece gemini com chave presente", () => {
+    const items = getIntegrations({ GEMINI_API_KEY: "g_x" });
+    expect(items.find((i) => i.name.startsWith("Provedor IA"))?.status).toBe("CONFIGURADO");
+  });
+
   it("reconhece supabase apenas com as duas variaveis presentes", () => {
     const items = getIntegrations({ SUPABASE_URL: "https://x.supabase.co", SUPABASE_ANON_KEY: "k" });
     expect(items.find((i) => i.name.startsWith("Supabase"))?.status).toBe("CONFIGURADO");

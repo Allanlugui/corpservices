@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
-import { DeterministicProvider, type TicketKind } from "@/domain/botia";
+import { type TicketKind } from "@/domain/botia";
+import { resolveBotProvider } from "@/lib/gemini";
 import { notifyRoles } from "@/lib/notify";
 
 const KIND_VALUES = ["servico", "compra"] as const;
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
   }
   const { kind, requester_name, requester_email, fields } = parsed.data;
 
-  const bot = new DeterministicProvider();
+  const bot = resolveBotProvider();
   const triage = await bot.triage({ kind: kind as TicketKind, fields });
 
   try {
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
         conversation_id: conversation.id,
         action: "triage",
         input: { kind, fields },
-        output: triage,
+        output: { ...triage, provider: bot.name },
       });
     }
     await admin.from("ticket_events").insert({
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
       event: "CRIADO",
       from_status: null,
       to_status: "NOVO",
-      detail: { channel: "portal", ai_suggested_kind: triage.suggestedKind },
+      detail: { channel: "portal", ai_suggested_kind: triage.suggestedKind, ai_provider: bot.name },
       client_key: parsed.data.client_key ?? null,
     });
     await notifyRoles(admin, org_id, ["gestor", "admin"], {

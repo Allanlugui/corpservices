@@ -36,8 +36,10 @@ export function getIntegrations(
     },
     {
       name: "Provedor IA (LLM)",
-      status: "PENDENTE_DE_INTEGRACAO",
-      detail: "BotIA opera em modo deterministico ate um provedor ser configurado.",
+      status: has(env["GEMINI_API_KEY"]) ? "CONFIGURADO" : "PENDENTE_DE_INTEGRACAO",
+      detail: has(env["GEMINI_API_KEY"])
+        ? "Gemini ativo com fallback determinístico (falha do LLM nunca quebra a triagem)."
+        : "BotIA opera em modo deterministico ate um provedor ser configurado.",
     },
     {
       name: "E-mail (Resend)",
