@@ -181,3 +181,10 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - Fix: migration v18 — RPC devolve destino_os/destino_compra (número, status, marcos; sem atores/valores). Verificado via pg: ticket 4 → OS-1 ENCERRADA + 8 marcos.
 - Redesign /solicitar/acompanhar: herói do protocolo, stepper 4 etapas, cards de destino com timeline, rótulos pt-BR (lib public-status + 4 testes), mobile-first, sem login.
 - Gates: lint 0 err · tsc 0 · 76/76 · build OK · deploy READY · acompanhar 200.
+
+## AUDITORIA FINAL DE ESCOPO (2026-09-27)
+- TODO: zero checkboxes abertos. Repo: 41 rotas API + 11 módulos app + PWA.
+- Produção: Supabase/LLM/E-mail/Push CONFIGURADO; ERP e WhatsApp PENDENTE (decisão humana D-27 + fora de escopo).
+- Cobertura por fase: 00–11, 12, 06b, 10, 13/13b, 14–17 — tudo executado e validado.
+- Gaps encontrados e fechados nesta auditoria: D-09 hash-chain (Fase 16), backup tabelas novas, destino do convertido (Fase 17).
+- Restam apenas itens fora de escopo: WhatsApp, fotos offline, sync bidirecional total, BI externo.
