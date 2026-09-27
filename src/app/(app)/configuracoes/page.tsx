@@ -176,6 +176,91 @@ function Parametros() {
   );
 }
 
+function Email() {
+  const toast = useToast();
+  const [queue, setQueue] = useState<{ counts: Record<string, number>; provider: string; configured: boolean } | null>(null);
+  const [testTo, setTestTo] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function reload() {
+    const res = await fetch("/api/notify/process");
+    if (res.ok) setQueue((await res.json()).data);
+  }
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/notify/process").then(async (res) => {
+      if (res.ok && alive) setQueue((await res.json()).data);
+    }).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function processQueue() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/notify/process", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Falha no processamento.", "error");
+      else {
+        toast(`Enviados: ${json.data.sent} · falhas: ${json.data.failed}`);
+        void reload();
+      }
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendTest() {
+    if (!testTo.includes("@")) {
+      toast("Informe um e-mail válido.", "error");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/notify/process", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ test_email: testTo }) });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Falha no teste.", "error");
+      else toast("E-mail de teste enviado.");
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!queue) return <LoadingState label="Carregando fila de e-mail…" />;
+  return (
+    <div className="grid gap-3">
+      <Card title="Provedor">
+        <p className="text-sm"><Badge tone={queue.configured ? "ok" : "blocked"}>{queue.configured ? `RESEND ATIVO` : "NÃO CONFIGURADO"}</Badge></p>
+        <p className="mt-2 text-sm text-slate-600">
+          {queue.configured
+            ? "Chave RESEND_API_KEY presente no servidor. Fila processada pelo botão abaixo ou agendador externo."
+            : "Defina RESEND_API_KEY no ambiente (Vercel) e EMAIL_FROM. Sem chave, a fila acumula e nada é enviado."}
+        </p>
+      </Card>
+      <Card title="Fila">
+        <p className="text-sm">Pendentes: <strong>{queue.counts.PENDING ?? 0}</strong> · Enviados: {queue.counts.SENT ?? 0} · Falhas: {queue.counts.FAILED ?? 0} · Sem e-mail: {queue.counts.SKIPPED ?? 0}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button variant="secondary" disabled={busy || !queue.configured} onClick={() => void processQueue()}>Processar fila agora</Button>
+        </div>
+      </Card>
+      <Card title="Teste">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="w-64">
+            <Input label="Enviar teste para" value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="voce@empresa.com" inputMode="email" />
+          </div>
+          <Button variant="secondary" disabled={busy || !queue.configured} onClick={() => void sendTest()}>Enviar teste</Button>
+        </div>
+      </Card>
+      <p className="text-xs text-slate-500">Kill-switch por org em Parâmetros → E-mail ativo. Push (VAPID) pendente de decisão.</p>
+    </div>
+  );
+}
+
 function ConfigInner({ initialTab }: { initialTab: number }) {
   return (
     <section>
@@ -192,6 +277,7 @@ function ConfigInner({ initialTab }: { initialTab: number }) {
             label: "Parâmetros",
             content: <Parametros />,
           },
+          { id: "email", label: "E-mail", content: <Email /> },
         ]}
       />
       <p className="mt-4 text-sm">
@@ -212,6 +298,6 @@ export default function ConfiguracoesPage() {
 function ConfigWithParams() {
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab");
-  const initial = tab === "logs" ? 1 : tab === "saude" ? 2 : tab === "backup" ? 3 : tab === "parametros" ? 4 : 0;
+  const initial = tab === "logs" ? 1 : tab === "saude" ? 2 : tab === "backup" ? 3 : tab === "parametros" ? 4 : tab === "email" ? 5 : 0;
   return <ConfigInner key={initial} initialTab={initial} />;
 }

@@ -6,6 +6,7 @@ import { can } from "@/domain/rbac";
 import { transitionPurchase, type PurchaseStatus } from "@/domain/purchase-states";
 import { resolveActors, withActorNames } from "@/lib/actors";
 import { notifyRoles, notifyUser } from "@/lib/notify";
+import { enqueueEmail } from "@/lib/email";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -171,6 +172,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         userId: req.requested_by as string,
         kind: to === "APROVADA" ? "compra_aprovada" : "compra_rejeitada",
         title: `Compra #${req.number} ${to === "APROVADA" ? "aprovada" : "rejeitada"}`,
+        link: `/compras/${id}`,
+      });
+      // E-mail espelha o in-app (fila; envio no worker).
+      await enqueueEmail(admin, session.orgId, {
+        userId: req.requested_by as string,
+        kind: to === "APROVADA" ? "compra_aprovada" : "compra_rejeitada",
+        subject: `Compra #${req.number} ${to === "APROVADA" ? "aprovada" : "rejeitada"}`,
         link: `/compras/${id}`,
       });
     }

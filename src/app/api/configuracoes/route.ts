@@ -32,6 +32,14 @@ export const SETTINGS = {
     default: 10,
     consumer: "POST /api/arquivos",
   },
+  email_enabled: {
+    label: "E-mail ativo (0=off, 1=on)",
+    type: "number" as const,
+    min: 0,
+    max: 1,
+    default: 0,
+    consumer: "POST /api/notify/process (worker da fila)",
+  },
 } as const;
 
 export type SettingKey = keyof typeof SETTINGS;
