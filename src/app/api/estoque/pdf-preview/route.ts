@@ -1,0 +1,61 @@
+import { z } from "zod";
+import { createAdminClient } from "@/lib/supabase-admin";
+import { fail, ok } from "@/lib/api";
+import { AuthError, requireProfile } from "@/lib/require-auth";
+import { can } from "@/domain/rbac";
+import { findMatches, resolveSupplier } from "@/lib/nfe";
+import { parseDanfeText } from "@/lib/danfe";
+
+/**
+ * Prévia de DANFE (PDF) SEM salvar. Mesmo contrato do xml-preview para
+ * reaproveitar a revisão M-01/M-02; entrada-xml legada segue intacta.
+ */
+export async function POST(request: Request) {
+  try {
+    const session = await requireProfile();
+    if (!can(session.role, "inventory", "update")) {
+      return fail("FORBIDDEN", "Sem permissao.", 403);
+    }
+    const parsed = z.object({ pdf_base64: z.string().min(100).max(12_000_000) }).safeParse(await request.json().catch(() => null));
+    if (!parsed.success) return fail("VALIDATION", "PDF ausente.", 422);
+    let text: string;
+    try {
+      const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      const bytes = Buffer.from(parsed.data.pdf_base64, "base64");
+      if (bytes.subarray(0, 5).toString() !== "%PDF-") return fail("PDF_INVALID", "Arquivo nao e um PDF valido.", 422);
+      const doc = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+      const parts: string[] = [];
+      const pages = Math.min(doc.numPages, 10);
+      for (let p = 1; p <= pages; p++) {
+        const page = await doc.getPage(p);
+        const content = await page.getTextContent();
+        parts.push(content.items.map((it) => ("str" in it ? (it.str as string) : "")).join("\n"));
+      }
+      await (doc as unknown as { destroy?: () => Promise<void> }).destroy?.();
+      text = parts.join("\n");
+    } catch {
+      return fail("PDF_PARSE", "Nao foi possivel ler o PDF.", 422);
+    }
+    const danfe = parseDanfeText(text);
+    const admin = createAdminClient();
+    const supplier = await resolveSupplier(admin, session.orgId, danfe.issuer, danfe.issuerDoc);
+    const items = await Promise.all(
+      danfe.items.map(async (item, index) => ({
+        index,
+        ...item,
+        matches: await findMatches(admin, session.orgId, item),
+      })),
+    );
+    return ok({
+      issuer: danfe.issuer,
+      supplier_id: supplier.id,
+      supplier_created: supplier.created,
+      items,
+      warnings: danfe.warnings,
+      source: "danfe-pdf",
+    });
+  } catch (e) {
+    if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
+    return fail("INTERNAL", "Erro interno.", 500);
+  }
+}

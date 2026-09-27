@@ -17,6 +17,8 @@ export default function NovoProdutoPage() {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState<ProductFormValue>(EMPTY_FORM);
   const [xmlResult, setXmlResult] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [source, setSource] = useState<"xml" | "pdf">("xml");
   const [preview, setPreview] = useState<null | {
     issuer: string;
     supplier_id: string | null;
@@ -62,21 +64,30 @@ export default function NovoProdutoPage() {
   }
 
   async function importFile(file: File) {
-    if (!file.name.toLowerCase().endsWith(".xml")) {
-      toast("Selecione um arquivo .xml de NF-e.", "error");
+    const lower = file.name.toLowerCase();
+    const isPdf = lower.endsWith(".pdf");
+    const isXml = lower.endsWith(".xml");
+    if (!isPdf && !isXml) {
+      toast("Selecione .xml (NF-e) ou .pdf (DANFE).", "error");
       return;
     }
     setBusy(true);
     setPreview(null);
     setXmlResult(null);
+    setWarnings([]);
     try {
-      const xml = await file.text();
-      setRawXml(xml);
-      // M-01: prévia para revisão antes de lançar.
-      const res = await fetch("/api/estoque/xml-preview", {
+      const endpoint = isPdf ? "/api/estoque/pdf-preview" : "/api/estoque/xml-preview";
+      setSource(isPdf ? "pdf" : "xml");
+      const payload = isPdf
+        ? { pdf_base64: await fileToBase64(file) }
+        : { xml: await file.text() };
+      if (!isPdf) setRawXml((payload as { xml: string }).xml);
+      else setRawXml(null);
+      // M-01: prévia para revisão antes de lançar (XML NF-e, XML genérico ou DANFE).
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ xml }),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!res.ok || json.error) {
@@ -84,6 +95,7 @@ export default function NovoProdutoPage() {
         return;
       }
       setPreview(json.data);
+      setWarnings(json.data.warnings ?? []);
       const initial: Record<number, { name: string; quantity: string; use_existing: string }> = {};
       for (const item of json.data.items) {
         initial[item.index] = { name: item.name, quantity: String(item.quantity), use_existing: "" };
@@ -94,6 +106,18 @@ export default function NovoProdutoPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = String(reader.result ?? "");
+        resolve(result.includes(",") ? result.split(",")[1] : result);
+      };
+      reader.onerror = () => reject(new Error("read"));
+      reader.readAsDataURL(file);
+    });
   }
 
   async function confirmAll() {
@@ -144,18 +168,26 @@ export default function NovoProdutoPage() {
       <Card title="Cadastro">
         <ProductForm value={form} onChange={setForm} suppliers={suppliers} submitLabel={busy ? "Criando…" : "Criar produto"} onSubmit={() => void submit()} busy={busy} />
       </Card>
-      <Card title="Entrada via arquivo XML de NF-e" className="mt-4">
+      <Card title="Entrada via NF-e, XML ou PDF (DANFE)" className="mt-4">
         <label className="block text-sm font-medium">
-          Arquivo .xml
+          Arquivo .xml ou .pdf
           <input
             type="file"
-            accept=".xml,text/xml"
+            accept=".xml,.pdf,text/xml,application/pdf"
             disabled={busy}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void importFile(f); e.target.value = ""; }}
             className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:font-semibold file:text-white"
           />
         </label>
-        <p className="mt-1 text-xs text-slate-500">Extrai os itens para revisão: edite, resolva duplicatas e lance tudo de uma vez.</p>
+        <p className="mt-1 text-xs text-slate-500">
+          XML de NF-e (completo, com XML auto-salvo) ou DANFE em PDF (extração best-effort).
+          Extrai os itens para revisão: edite, resolva duplicatas e lance tudo de uma vez. A entrada-xml legada continua disponível na API.
+        </p>
+        {warnings.length > 0 ? (
+          <ul className="mt-2 grid gap-1 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
+            {warnings.map((w, i) => <li key={i}>• {w}{source === "pdf" ? " (PDF: confira cada campo)" : ""}</li>)}
+          </ul>
+        ) : null}
         {preview ? (
           <div className="mt-3 grid gap-3">
             <p className="text-sm">
