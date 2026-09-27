@@ -13,6 +13,8 @@ const ticketSchema = z.object({
   requester_email: z.string().trim().email().max(160),
   fields: z.record(z.string(), z.string().max(4000)),
   client_key: z.string().uuid().optional(),
+  location_id: z.string().uuid().nullable().optional(),
+  location_detail: z.string().trim().max(300).default(""),
 });
 
 /** Rejeita tentativa de vincular profile pelo portal publico (espelha a policy RLS). */
@@ -76,6 +78,12 @@ export async function POST(request: Request) {
     if (requester_profile_id_present(body)) {
       return fail("VALIDATION", "Campos invalidos.", 422);
     }
+    // Local informado: valida na org; inválido = ignora (nunca bloqueia o pedido).
+    let locationId: string | null = parsed.data.location_id ?? null;
+    if (locationId) {
+      const { data: loc } = await admin.from("locations").select("id").eq("id", locationId).eq("org_id", org_id).maybeSingle();
+      if (!loc) locationId = null;
+    }
     const { data: ticket, error: insertError } = await admin
       .from("tickets")
       .insert({
@@ -91,6 +99,8 @@ export async function POST(request: Request) {
         ai_missing_fields: triage.missingFields,
         payload: fields,
         client_key: parsed.data.client_key ?? null,
+        location_id: locationId,
+        location_detail: parsed.data.location_detail ?? "",
       })
       .select("id, number, tracking_token")
       .single();

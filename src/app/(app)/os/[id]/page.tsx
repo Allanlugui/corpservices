@@ -26,6 +26,8 @@ interface Wo {
   status: string;
   priority: string;
   location: string | null;
+  location_path: string | null;
+  location_detail: string | null;
   assigned_to: string | null;
   sla_total_ms: number;
   sla_remaining_ms: number;
@@ -342,7 +344,7 @@ function DetailInner({ id }: { id: string }) {
       <div className="mt-2">
         <PageHeader
           title={`OS-${String(wo.number).padStart(6, "0")} · ${wo.title}`}
-          description={`${wo.location ?? "Local não informado"} · SLA restante ${formatRemaining(wo.sla_remaining_ms)}${openPause ? " (congelado — pausada)" : ""}`}
+          description={`${wo.location_path ?? wo.location ?? "Local não informado"}${wo.location_detail ? ` — ${wo.location_detail}` : ""} · SLA restante ${formatRemaining(wo.sla_remaining_ms)}${openPause ? " (congelado — pausada)" : ""}`}
           actions={<><StatusBadge status={wo.status} /> <PriorityBadge priority={wo.priority} /> <ActionLink href={`/api/pdf?entity=os&id=${wo.id}`}>Baixar PDF</ActionLink></>}
         />
       </div>

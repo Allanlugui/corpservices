@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -12,7 +12,7 @@ type Kind = "servico" | "compra";
 
 const SERVICO_STEPS = [
   { key: "descricao", label: "Descreva o problema", type: "textarea", required: true },
-  { key: "local", label: "Onde? (local/setor)", type: "text", required: true },
+  { key: "local", label: "Complemento do local (se não achou na lista)", type: "text", required: false },
   { key: "prioridade", label: "Prioridade", type: "select", options: ["baixa", "media", "alta", "critica"], required: true },
   { key: "equipamento", label: "Equipamento/ativo (se houver)", type: "text", required: false },
 ] as const;
@@ -43,10 +43,21 @@ export default function SolicitarPage() {
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<Created | null>(null);
   const [queued, setQueued] = useState(false);
+  const [locations, setLocations] = useState<{ id: string; path: string }[]>([]);
+  const [locationId, setLocationId] = useState("");
+  const [locationDetail, setLocationDetail] = useState("");
+
+  useEffect(() => {
+    fetch("/api/locais/public")
+      .then(async (res) => {
+        if (res.ok) setLocations((await res.json()).data.locations as { id: string; path: string }[]);
+      })
+      .catch(() => {});
+  }, []);
 
   const fieldSteps = kind === "servico" ? SERVICO_STEPS : COMPRA_STEPS;
-  // step 0 = tipo, 1 = identificacao, 2..n+1 = campos, ultimo = revisao
-  const totalSteps = 2 + fieldSteps.length + 1;
+  // step 0 = tipo, 1 = identificacao, 2 = local, 3..n+2 = campos, ultimo = revisao
+  const totalSteps = 3 + fieldSteps.length + 1;
 
   function setField(key: string, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
@@ -55,8 +66,9 @@ export default function SolicitarPage() {
   function canAdvance(): boolean {
     if (step === 0) return kind !== null;
     if (step === 1) return name.trim().length >= 2 && /.+@.+\..+/.test(email);
-    if (step < 2 + fieldSteps.length) {
-      const field = fieldSteps[step - 2];
+    if (step === 2) return true;
+    if (step < 3 + fieldSteps.length) {
+      const field = fieldSteps[step - 3];
       if (!field.required) return true;
       return (fields[field.key] ?? "").trim().length > 0;
     }
@@ -73,7 +85,7 @@ export default function SolicitarPage() {
       const res = await fetch("/api/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind, requester_name: name, requester_email: email, fields, client_key: key }),
+        body: JSON.stringify({ kind, requester_name: name, requester_email: email, fields, client_key: key, location_id: locationId || null, location_detail: locationDetail }),
       });
       const json = await res.json();
       if (!res.ok || json.error) {
@@ -83,7 +95,7 @@ export default function SolicitarPage() {
       setCreated(json.data as Created);
     } catch {
       // Offline: entra na fila com chave idempotente; sincroniza ao reconectar.
-      saveQueue(enqueue(loadQueue(), { key, type: "ticket.create", payload: { kind, requester_name: name, requester_email: email, fields } }));
+      saveQueue(enqueue(loadQueue(), { key, type: "ticket.create", payload: { kind, requester_name: name, requester_email: email, fields, location_id: locationId || null, location_detail: locationDetail } }));
       setQueued(true);
     } finally {
       setSending(false);
@@ -157,8 +169,17 @@ export default function SolicitarPage() {
               <Input label="E-mail corporativo" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </>
           )}
-          {step >= 2 && step < 2 + fieldSteps.length && (() => {
-            const field = fieldSteps[step - 2];
+          {step === 2 && (
+            <>
+              <Select label="Onde você está? (local)" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
+                <option value="">Selecione… (opcional)</option>
+                {locations.map((l) => <option key={l.id} value={l.id}>{l.path}</option>)}
+              </Select>
+              <Input label="Detalhe do ponto (ex: sala 205, fundo do corredor)" value={locationDetail} onChange={(e) => setLocationDetail(e.target.value)} placeholder="Opcional — ajuda a localizar" />
+            </>
+          )}
+          {step >= 3 && step < 3 + fieldSteps.length && (() => {
+            const field = fieldSteps[step - 3];
             const value = fields[field.key] ?? "";
             const onChange = (v: string) => setField(field.key, v);
             if (field.type === "textarea") {
@@ -178,6 +199,7 @@ export default function SolicitarPage() {
             <div className="text-sm">
               <p><strong>Tipo:</strong> {kind}</p>
               <p><strong>Nome:</strong> {name} · <strong>E-mail:</strong> {email}</p>
+              {locationId ? <p><strong>Local:</strong> {locations.find((l) => l.id === locationId)?.path ?? "—"}{locationDetail ? ` — ${locationDetail}` : ""}</p> : null}
               <ul className="mt-2 list-disc pl-5">
                 {Object.entries(fields).map(([k, v]) => <li key={k}><strong>{k}:</strong> {v}</li>)}
               </ul>

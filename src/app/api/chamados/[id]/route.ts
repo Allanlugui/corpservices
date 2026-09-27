@@ -49,7 +49,20 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       assignee_name = actors.get(ticket.assigned_to as string)?.name ?? null;
     }
     const named = withActorNames(events ?? [], await resolveActors((events ?? []).map((e) => e.actor_profile_id)));
-    return ok({ ticket: { ...ticket, assignee_name }, events: named, messages: messages ?? [] });
+    let location_path: string | null = null;
+    if (ticket.location_id) {
+      const { data: locs } = await admin.from("locations").select("id, parent_id, name").eq("org_id", session.orgId);
+      const byId = new Map(((locs ?? []) as { id: string; parent_id: string | null; name: string }[]).map((l) => [l.id, l]));
+      const chain: string[] = [];
+      let cur = byId.get(ticket.location_id as string);
+      let guard = 0;
+      while (cur && guard++ < 10) {
+        chain.unshift(cur.name);
+        cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+      }
+      if (chain.length > 0) location_path = chain.join(" › ");
+    }
+    return ok({ ticket: { ...ticket, assignee_name, location_path }, events: named, messages: messages ?? [] });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);

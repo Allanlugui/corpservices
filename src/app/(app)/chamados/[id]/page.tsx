@@ -31,6 +31,9 @@ interface Detail {
     ai_suggested_kind: string | null;
     ai_missing_fields: string[];
     assignee_name: string | null;
+    location_id: string | null;
+    location_detail: string | null;
+    location_path: string | null;
     created_at: string;
   };
   events: { event: string; from_status: string | null; to_status: string | null; detail: Record<string, unknown>; actor_name: string; created_at: string }[];
@@ -228,6 +231,7 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
                     <div><dt className="text-slate-500">Tipo</dt><dd className="font-medium">{ticket.kind}</dd></div>
                     <div><dt className="text-slate-500">Sugestão da IA</dt><dd className="font-medium">{ticket.ai_suggested_kind ?? "—"}</dd></div>
                     <div><dt className="text-slate-500">Categoria</dt><dd className="font-medium">{ticket.category ?? "—"}</dd></div>
+                    {ticket.location_path ? <div><dt className="text-slate-500">Local</dt><dd className="font-medium">{ticket.location_path}{ticket.location_detail ? ` — ${ticket.location_detail}` : ""}</dd></div> : ticket.location_detail ? <div><dt className="text-slate-500">Local</dt><dd className="font-medium">{ticket.location_detail}</dd></div> : null}
                     <div><dt className="text-slate-500">Prioridade</dt><dd className="font-medium">{ticket.priority ?? "—"}</dd></div>
                   </dl>
                   <ul className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-sm">

@@ -74,7 +74,21 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       const { data: p } = await admin.from("work_orders").select("id, number, title, status").eq("id", wo.parent_work_order_id).single();
       parent = p ?? null;
     }
-    return ok({ work_order: wo, pauses: pauses ?? [], checklist: checklist ?? [], materials: materials ?? [], events: named, children: children ?? [], parent });
+    // Local estruturado (B3): caminho montado subindo a árvore.
+    let location_path: string | null = null;
+    if (wo.location_id) {
+      const { data: locs } = await admin.from("locations").select("id, parent_id, name").eq("org_id", session.orgId);
+      const byId = new Map(((locs ?? []) as { id: string; parent_id: string | null; name: string }[]).map((l) => [l.id, l]));
+      const chain: string[] = [];
+      let cur = byId.get(wo.location_id as string);
+      let guard = 0;
+      while (cur && guard++ < 10) {
+        chain.unshift(cur.name);
+        cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+      }
+      if (chain.length > 0) location_path = chain.join(" › ");
+    }
+    return ok({ work_order: { ...wo, location_path }, pauses: pauses ?? [], checklist: checklist ?? [], materials: materials ?? [], events: named, children: children ?? [], parent });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);

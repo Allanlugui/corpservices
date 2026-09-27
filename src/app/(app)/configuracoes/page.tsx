@@ -14,6 +14,7 @@ import { ErrorState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { AuditoriaViewer } from "@/components/AuditoriaViewer";
 import { LogsViewer } from "@/components/LogsViewer";
+import { Locais } from "@/components/Locais";
 import RelatoriosPage from "../relatorios/page";
 
 interface Health {
@@ -583,6 +584,7 @@ function ConfigInner({ initialTab }: { initialTab: number }) {
             content: <Parametros />,
           },
           { id: "email", label: "E-mail e push", content: <Email /> },
+          { id: "locais", label: "Locais", content: <Locais /> },
           { id: "relatorios", label: "Relatórios", content: <RelatoriosPage /> },
         ]}
       />
@@ -604,6 +606,6 @@ export default function ConfiguracoesPage() {
 function ConfigWithParams() {
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab");
-  const initial = tab === "logs" ? 1 : tab === "saude" ? 2 : tab === "backup" ? 3 : tab === "parametros" ? 4 : tab === "email" ? 5 : tab === "relatorios" ? 6 : 0;
+  const initial = tab === "logs" ? 1 : tab === "saude" ? 2 : tab === "backup" ? 3 : tab === "parametros" ? 4 : tab === "email" ? 5 : tab === "locais" ? 6 : tab === "relatorios" ? 7 : 0;
   return <ConfigInner key={initial} initialTab={initial} />;
 }

@@ -66,10 +66,11 @@ export async function POST(request: Request) {
     if (!parsed.success) return fail("VALIDATION", "Campos invalidos.", 422, parsed.error.flatten().fieldErrors);
 
     const admin = createAdminClient();
+    let ticketLoc: { location_id: string | null; location_detail: string } | null = null;
     if (parsed.data.ticket_id) {
       const { data: ticket } = await admin
         .from("tickets")
-        .select("id, status")
+        .select("id, status, location_id, location_detail")
         .eq("id", parsed.data.ticket_id)
         .eq("org_id", session.orgId)
         .single();
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
       if (ticket.status !== "CONVERTIDO") {
         return fail("INVALID_TICKET", "OS nasce de ticket CONVERTIDO.", 422);
       }
+      ticketLoc = { location_id: ticket.location_id as string | null, location_detail: (ticket.location_detail as string) ?? "" };
     }
 
     if (parsed.data.parent_work_order_id) {
@@ -104,6 +106,8 @@ export async function POST(request: Request) {
         description: parsed.data.description,
         priority: parsed.data.priority,
         location: parsed.data.location ?? null,
+        location_id: ticketLoc?.location_id ?? null,
+        location_detail: ticketLoc?.location_detail ?? "",
         assigned_to: parsed.data.assigned_to ?? null,
         created_by: session.userId,
         sla_total_ms: slaTotal,
