@@ -257,6 +257,7 @@ function Email() {
         </div>
       </Card>
       <p className="text-xs text-slate-500">Kill-switch por org em Parâmetros → E-mail ativo. Push configurado abaixo.</p>
+      <WhatsCard />
       <SignatureCard />
       <PushCard />
     </div>
@@ -269,6 +270,96 @@ function urlBase64ToU8(base64: string): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
+}
+
+function WhatsCard() {
+  const toast = useToast();
+  const [queue, setQueue] = useState<{ counts: Record<string, number>; configured: boolean; template: string } | null>(null);
+  const [phone, setPhone] = useState("");
+  const [testTo, setTestTo] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/notify/whatsapp").then(async (res) => {
+      if (res.ok && alive) setQueue((await res.json()).data);
+    }).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function savePhone() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/notify/whatsapp", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone }) });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Telefone inválido.", "error");
+      else toast("WhatsApp ativado para seus avisos.");
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function processQueue() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/notify/whatsapp", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Falha.", "error");
+      else {
+        toast(`Enviados: ${json.data.sent} · falhas: ${json.data.failed}`);
+        const r = await fetch("/api/notify/whatsapp");
+        if (r.ok) setQueue((await r.json()).data);
+      }
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendTest() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/notify/whatsapp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ test_phone: testTo }) });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Falha no teste.", "error");
+      else toast("Template de teste enviado.");
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!queue) return <LoadingState label="Carregando WhatsApp…" />;
+  return (
+    <Card title="WhatsApp">
+      <p className="text-sm"><Badge tone={queue.configured ? "ok" : "blocked"}>{queue.configured ? "META API ATIVA" : "NÃO CONFIGURADO"}</Badge></p>
+      <p className="mt-2 text-sm text-slate-600">
+        {queue.configured
+          ? `Template "${queue.template}". Cadastre seu número para receber avisos de compra.`
+          : "Defina WHATSAPP_TOKEN + WHATSAPP_PHONE_ID no ambiente. Sem isso, a fila acumula e nada é enviado."}
+      </p>
+      <div className="mt-2 flex flex-wrap items-end gap-2">
+        <div className="w-52">
+          <Input label="Meu WhatsApp (DDD+número)" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" inputMode="tel" />
+        </div>
+        <Button variant="secondary" disabled={busy} onClick={() => void savePhone()}>Salvar número</Button>
+      </div>
+      <p className="mt-2 text-sm">Fila — pendentes: <strong>{queue.counts.PENDING ?? 0}</strong> · enviados: {queue.counts.SENT ?? 0} · falhas: {queue.counts.FAILED ?? 0}</p>
+      <div className="mt-2 flex flex-wrap items-end gap-2">
+        <Button variant="secondary" disabled={busy || !queue.configured} onClick={() => void processQueue()}>Processar fila</Button>
+        <div className="w-52">
+          <Input label="Teste para" value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="(11) 99999-9999" inputMode="tel" />
+        </div>
+        <Button variant="secondary" disabled={busy || !queue.configured} onClick={() => void sendTest()}>Enviar teste</Button>
+      </div>
+    </Card>
+  );
 }
 
 function SignatureCard() {

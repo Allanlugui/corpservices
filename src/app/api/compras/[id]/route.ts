@@ -7,6 +7,7 @@ import { transitionPurchase, type PurchaseStatus } from "@/domain/purchase-state
 import { resolveActors, withActorNames } from "@/lib/actors";
 import { notifyRoles, notifyUser } from "@/lib/notify";
 import { enqueueEmail } from "@/lib/email";
+import { enqueueWhats } from "@/lib/whatsapp";
 import { sendPushToUser } from "@/lib/push";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
@@ -191,6 +192,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       } catch {
         /* offline de push: sem efeito no fluxo */
       }
+      // WhatsApp espelha o in-app (fila; envio no worker; SKIPPED sem telefone).
+      await enqueueWhats(admin, session.orgId, {
+        userId: req.requested_by as string,
+        kind: to === "APROVADA" ? "compra_aprovada" : "compra_rejeitada",
+        body: `Compra #${req.number} ${to === "APROVADA" ? "aprovada" : "rejeitada"}. Acompanhe no sistema.`,
+        link: `/compras/${id}`,
+      });
     }
     if (to === "CONCLUIDA") {
       await admin.from("purchase_requests").update({ updated_at: new Date().toISOString() }).eq("id", id);

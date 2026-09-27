@@ -13,6 +13,11 @@ describe("getIntegrations", () => {
     expect(byName.get("WhatsApp")).toBe("PENDENTE_DE_INTEGRACAO");
   });
 
+  it("reconhece whatsapp com credenciais", () => {
+    const items = getIntegrations({ WHATSAPP_TOKEN: "t", WHATSAPP_PHONE_ID: "p" });
+    expect(items.find((i) => i.name === "WhatsApp")?.status).toBe("CONFIGURADO");
+  });
+
   it("reconhece resend com chave presente", () => {
     const items = getIntegrations({ RESEND_API_KEY: "re_x" });
     expect(items.find((i) => i.name.startsWith("E-mail"))?.status).toBe("CONFIGURADO");

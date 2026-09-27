@@ -57,8 +57,10 @@ export function getIntegrations(
     },
     {
       name: "WhatsApp",
-      status: "PENDENTE_DE_INTEGRACAO",
-      detail: "Previsto como canal futuro; fora do escopo das fases iniciais.",
+      status: has(env["WHATSAPP_TOKEN"]) && has(env["WHATSAPP_PHONE_ID"]) ? "CONFIGURADO" : "PENDENTE_DE_INTEGRACAO",
+      detail: has(env["WHATSAPP_TOKEN"]) && has(env["WHATSAPP_PHONE_ID"])
+        ? "Meta Cloud API com template; fila processada em Configurações."
+        : "Defina WHATSAPP_TOKEN + WHATSAPP_PHONE_ID e aprove um template na Meta.",
     },
   ];
 }
