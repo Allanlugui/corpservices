@@ -3,7 +3,7 @@
 import { Suspense, use, useEffect, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { StatusBadge } from "@/components/ui/badge";
+import { StatusBadge, Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
 import { Timeline } from "@/components/ui/timeline";
@@ -50,6 +50,9 @@ interface Order {
   amount_cents: number;
   currency: string;
   status: string;
+  delivery_deadline: string | null;
+  tracking_code: string | null;
+  notes: string;
 }
 interface Detail {
   purchase: Purchase;
@@ -77,6 +80,62 @@ const ADVANCE: Record<string, { label: string; to: string }[]> = {
 
 function fmtMoney(cents: number, currency: string): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency });
+}
+
+function OrderCard({ purchaseId, order: o, onChanged }: { purchaseId: string; order: Order; onChanged: () => void }) {
+  const toast = useToast();
+  const [deadline, setDeadline] = useState(o.delivery_deadline ?? "");
+  const [tracking, setTracking] = useState(o.tracking_code ?? "");
+  const [busy, setBusy] = useState(false);
+  const { files, reload } = useFiles("purchase", purchaseId);
+  const receipts = files.filter((f) => f.folder === "recibo_pagamento");
+  const nfs = files.filter((f) => f.folder === "nota_fiscal");
+
+  async function save() {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/compras/${purchaseId}/orders/${o.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ delivery_deadline: deadline || null, tracking_code: tracking || null }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Não foi possível salvar.", "error");
+      else {
+        toast("Pedido atualizado.");
+        onChanged();
+      }
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card
+      title={`${o.supplier} — ${fmtMoney(o.amount_cents, o.currency)}`}
+      actions={<Badge tone={o.status === "RECEBIDO" ? "ok" : o.status === "CANCELADO" ? "blocked" : "pending"}>{o.status}</Badge>}
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Input label="Prazo de entrega" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+        <Input label="Rastreio" value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="Código de rastreio" />
+      </div>
+      <Button variant="secondary" size="sm" disabled={busy} onClick={() => void save()} className="mt-2">Salvar tratativa</Button>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div>
+          <p className="mb-1 text-sm font-semibold">Recibo de pagamento (COT-01)</p>
+          <FileUploader ownerType="purchase" ownerId={purchaseId} folder="recibo_pagamento" folders={["recibo_pagamento"]} accept="image/jpeg,image/png,image/webp,application/pdf" label="Anexar recibo" pasteHint onUploaded={reload} />
+          <div className="mt-2"><FileList files={receipts} onDelete={reload} /></div>
+        </div>
+        <div>
+          <p className="mb-1 text-sm font-semibold">Nota fiscal do pedido (NF-01)</p>
+          <FileList files={nfs} onDelete={reload} />
+          <p className="mt-1 text-xs text-slate-500">Anexe pela aba Nota fiscal.</p>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 function DetailInner({ id }: { id: string }) {
@@ -218,6 +277,11 @@ function DetailInner({ id }: { id: string }) {
                         </Button>
                       </>
                     )}
+                    {(p.status === "APROVADA" || p.status === "NEGOCIACAO" || p.status === "PAGAMENTO") && (
+                      <Button variant="secondary" disabled={busy} onClick={() => setConfirm({ label: "Trocar fornecedor (volta à cotação)", body: { action: "advance", to: "COTACAO" } })}>
+                        Trocar fornecedor
+                      </Button>
+                    )}
                     {(p.status === "SOLICITADA" || p.status === "EM_ANALISE" || p.status === "DESIGNADA" || p.status === "COTACAO" || p.status === "AGUARDANDO_APROVACAO" || p.status === "APROVADA" || p.status === "NEGOCIACAO" || p.status === "PAGAMENTO") && (
                       <Button variant="danger" disabled={busy} onClick={() => setConfirm({ label: "Cancelar compra", body: { action: "cancel" } })}>
                         Cancelar
@@ -262,18 +326,17 @@ function DetailInner({ id }: { id: string }) {
             id: "pedidos",
             label: `Pedidos (${orders.length})`,
             content: (
-              <Card title="Pedidos gerados na aprovação">
-                <ul className="grid gap-2 text-sm">
-                  {orders.map((o) => (
-                    <li key={o.id} className="rounded-lg border border-slate-200 p-3">
-                      <p className="font-semibold">{o.supplier} — {fmtMoney(o.amount_cents, o.currency)}</p>
-                      <p className="text-slate-600">Status: {o.status}</p>
-                    </li>
-                  ))}
-                  {orders.length === 0 ? <li className="text-slate-500">Nenhum pedido (gerado ao aprovar com cotação escolhida).</li> : null}
-                </ul>
-                <p className="mt-3 text-xs text-slate-500">Pagamento financeiro real: somente com integração configurada (limite arquitetural).</p>
-              </Card>
+              <div className="grid gap-4">
+                {orders.map((o) => (
+                  <OrderCard key={o.id} purchaseId={id} order={o} onChanged={() => load()} />
+                ))}
+                {orders.length === 0 ? (
+                  <Card title="Pedidos gerados na aprovação">
+                    <p className="text-sm text-slate-500">Nenhum pedido (gerado ao aprovar com cotação escolhida).</p>
+                  </Card>
+                ) : null}
+                <p className="text-xs text-slate-500">Pagamento financeiro real: somente com integração configurada (limite arquitetural).</p>
+              </div>
             ),
           },
           {

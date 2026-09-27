@@ -19,6 +19,7 @@ interface DashboardData {
   activity: { event: string; created_at: string }[];
   work_orders: { id: string; number: number; title: string; status: string }[];
   purchases: { id: string; number: number; status: string }[];
+  finance: { stock_value_cents: number; orders_open_cents: number; orders_received_cents: number } | null;
 }
 
 function greeting(): string {
@@ -61,6 +62,8 @@ function GestorDashboard({ name }: { name: string }) {
       .catch(() => setError(true));
   }, []);
 
+  const fmtRs = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   return (
     <section>
       <PageHeader title={`${greeting()}${name ? `, ${name}` : ""}`} description="Operação de hoje: chamados, SLA e atividade recente." />
@@ -78,6 +81,13 @@ function GestorDashboard({ name }: { name: string }) {
             <StatCard label="OS abertas" value={String(data.kpis.os_abertas)} hint="Não encerradas" />
             <StatCard label="Compras pendentes" value={String(data.kpis.compras_pendentes)} hint="Em andamento" />
           </div>
+          {data.finance ? (
+            <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
+              <StatCard label="Estoque valorizado" value={fmtRs(data.finance.stock_value_cents)} hint="Qtd × custo" />
+              <StatCard label="Pedidos abertos (mês)" value={fmtRs(data.finance.orders_open_cents)} hint="A pagar" />
+              <StatCard label="Recebidos (mês)" value={fmtRs(data.finance.orders_received_cents)} hint="Entraram" />
+            </div>
+          ) : null}
           <div className="mt-4 grid gap-4 xl:grid-cols-3">
             <Card title="Chamados recentes" className="xl:col-span-2" actions={<Link href="/chamados" className="text-sm font-semibold text-brand-700 hover:underline">Ver todos</Link>}>
               {data.recent.length === 0 ? (

@@ -41,7 +41,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       admin.from("purchase_orders").select("*").eq("request_id", id).order("created_at"),
       admin.from("purchase_events").select("*").eq("request_id", id).order("created_at"),
     ]);
-    const named = withActorNames(events ?? [], await resolveActors((events ?? []).map((e) => e.actor_profile_id)));
     // Origem legivel: numero/titulo do ticket ou da OS vinculada.
     let origin_label: string | null = null;
     if (req.ticket_id) {
@@ -52,6 +51,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       const { data: w } = await admin.from("work_orders").select("number, title").eq("id", req.work_order_id).single();
       if (w) origin_label = `OS-${String(w.number).padStart(6, "0")} · ${w.title}`;
     }
+    const named = withActorNames(events ?? [], await resolveActors((events ?? []).map((e) => e.actor_profile_id)));
     return ok({ purchase: { ...req, origin_label }, items: items ?? [], quotes: quotes ?? [], orders: orders ?? [], events: named });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
@@ -118,6 +118,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       if (parsed.data.to === "AGUARDANDO_APROVACAO") {
         const { count } = await admin.from("purchase_quotes").select("id", { count: "exact", head: true }).eq("request_id", id);
         if (!count) return fail("NO_QUOTE", "Envie ao menos uma cotacao antes.", 422);
+      }
+      // COT-02: troca de fornecedor pós-aprovação — cancela pedidos abertos e reabre cotação.
+      if (parsed.data.to === "COTACAO" && ["APROVADA", "NEGOCIACAO", "PAGAMENTO"].includes(from)) {
+        await admin.from("purchase_orders").update({ status: "CANCELADO" }).eq("request_id", id).eq("status", "ABERTO");
+        await admin.from("purchase_quotes").update({ chosen: false }).eq("request_id", id);
+        detail["requote"] = true;
       }
     }
 

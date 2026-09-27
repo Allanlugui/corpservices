@@ -34,6 +34,23 @@ export async function GET() {
     ]);
     const openOs = (workOrders ?? []).filter((w) => !["ENCERRADA"].includes(w.status as string)).length;
     const pendingPurchases = (purchases ?? []).filter((p) => !["CONCLUIDA", "CANCELADA", "REJEITADA"].includes(p.status as string)).length;
+    // FIN-02: snapshot financeiro do mês (estoque valorizado + pedidos).
+    let finance: { stock_value_cents: number; orders_open_cents: number; orders_received_cents: number } | null = null;
+    if (session.role === "admin" || session.role === "gestor") {
+      const since = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+      const [{ data: prods }, { data: reqs }] = await Promise.all([
+        admin.from("products").select("quantity, cost_cents").eq("org_id", session.orgId).eq("active", true).limit(2000),
+        admin.from("purchase_requests").select("id").eq("org_id", session.orgId),
+      ]);
+      const ids = new Set((reqs ?? []).map((r) => r.id as string));
+      const { data: orders } = await admin.from("purchase_orders").select("amount_cents, status, request_id").gte("created_at", since).limit(2000);
+      const mine = (orders ?? []).filter((o) => ids.has(o.request_id as string));
+      finance = {
+        stock_value_cents: (prods ?? []).reduce((a, p) => a + Number(p.quantity) * Number(p.cost_cents), 0),
+        orders_open_cents: mine.filter((o) => (o.status as string) === "ABERTO").reduce((a, o) => a + Number(o.amount_cents), 0),
+        orders_received_cents: mine.filter((o) => (o.status as string) === "RECEBIDO").reduce((a, o) => a + Number(o.amount_cents), 0),
+      };
+    }
     return ok({
       kpis: {
         novos: count("NOVO"),
@@ -47,6 +64,7 @@ export async function GET() {
       activity: events ?? [],
       work_orders: workOrders ?? [],
       purchases: purchases ?? [],
+      finance,
     });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);

@@ -9,13 +9,14 @@ import { LoadingState } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 
-type Entity = "tickets" | "os" | "compras" | "estoque" | "movimentacoes";
+type Entity = "tickets" | "os" | "compras" | "estoque" | "movimentacoes" | "financeiro";
 const ENTITIES: [Entity, string][] = [
   ["tickets", "Chamados"],
   ["os", "OS"],
   ["compras", "Compras"],
   ["estoque", "Estoque"],
   ["movimentacoes", "Movimentações"],
+  ["financeiro", "Financeiro"],
 ];
 const PERIODS: [string, string][] = [
   ["dia", "Dia"],

@@ -5,7 +5,7 @@ import { AuthError, requireProfile } from "@/lib/require-auth";
 import { can } from "@/domain/rbac";
 
 const querySchema = z.object({
-  entity: z.enum(["tickets", "os", "compras", "estoque", "movimentacoes"]),
+  entity: z.enum(["tickets", "os", "compras", "estoque", "movimentacoes", "financeiro"]),
   periodo: z.enum(["dia", "semana", "mes", "trimestre", "ano", "tudo"]).default("mes"),
   status: z.string().optional(),
   format: z.enum(["json", "csv"]).default("json"),
@@ -26,6 +26,7 @@ const PERM: Record<string, [string, string]> = {
   compras: ["purchases", "read"],
   estoque: ["inventory", "read"],
   movimentacoes: ["inventory", "read"],
+  financeiro: ["reports", "read"],
 };
 
 function toCsv(rows: Record<string, unknown>[]): string {
@@ -53,7 +54,28 @@ export async function GET(request: Request) {
     const since = new Date(Date.now() - PERIOD_MS[periodo]).toISOString();
     let rows: Record<string, unknown>[] = [];
 
-    if (entity === "tickets") {
+    // FIN-01: custo operacional — valores de pedidos + estoque + volumes.
+    if (entity === "financeiro") {
+      const [{ data: orders }, { data: products }] = await Promise.all([
+        admin.from("purchase_orders").select("amount_cents, currency, status, created_at, request_id").gte("created_at", since).limit(2000),
+        admin.from("products").select("quantity, cost_cents").eq("org_id", session.orgId).eq("active", true).limit(2000),
+      ]);
+      // Pedidos só da org: filtra via requests da org.
+      const { data: reqs } = await admin.from("purchase_requests").select("id").eq("org_id", session.orgId);
+      const ids = new Set((reqs ?? []).map((r) => r.id as string));
+      const mine = (orders ?? []).filter((o) => ids.has(o.request_id as string));
+      const sum = (st: string[]) => mine.filter((o) => st.includes(o.status as string)).reduce((a, o) => a + Number(o.amount_cents), 0);
+      const stockValue = (products ?? []).reduce((a, p) => a + Number(p.quantity) * Number(p.cost_cents), 0);
+      const toRs = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      rows = [
+        { indicador: "Pedidos em aberto (R$)", valor: toRs(sum(["ABERTO"])) },
+        { indicador: "Pedidos pagos (R$)", valor: toRs(sum(["PAGO"])) },
+        { indicador: "Pedidos recebidos (R$)", valor: toRs(sum(["RECEBIDO"])) },
+        { indicador: "Pedidos cancelados (R$)", valor: toRs(sum(["CANCELADO"])) },
+        { indicador: "Estoque valorizado (R$)", valor: toRs(stockValue) },
+        { indicador: "Pedidos no período", valor: String(mine.length) },
+      ];
+    } else if (entity === "tickets") {
       let q = admin.from("tickets").select("number, kind, status, requester_name, requester_email, created_at").eq("org_id", session.orgId).gte("created_at", since).order("created_at", { ascending: false }).limit(500);
       if (status) q = q.eq("status", status);
       rows = ((await q).data ?? []) as Record<string, unknown>[];

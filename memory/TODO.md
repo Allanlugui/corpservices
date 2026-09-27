@@ -98,13 +98,14 @@
 - [x] F-01 Arquivos somente-leitura: upload na OS/compra/produto; paste Ctrl+V; docs na designação
 - [x] F-02 NF vinculada: aba NF na compra + XML auto-salvo + NFs transversais nos Arquivos
 
-## FASE 06b — Fluxo de compras + financeiro [PLANEJADA — escopo do usuário, sem quebrar atual]
-- [ ] COT-01 Recibo de pagamento anexado ao pedido + tratativa (prazo de entrega, acompanhamento)
-- [ ] COT-02 Troca de fornecedor pós-aprovação volta para aprovação (re-quote com re-aprovação)
-- [ ] NF-01 Nota fiscal vinculada ao PEDIDO (não à solicitação); XML auto-salvo linkado ao pedido
-- [ ] FIN-01 Relatórios com foco em custo operacional (CorpServices Group)
-- [ ] FIN-02 Métricas financeiras no dashboard
-- Base existente aproveitada: cotações com notas, escolha do gestor, rejeição justificada, pedido auto, recebimento, aba NF
+## FASE 06b — Fluxo de compras + financeiro [CONCLUIDA 2026-09-27]
+- [x] COT-01 Recibo de pagamento anexado ao pedido (folder recibo_pagamento) + tratativa (prazo de entrega, rastreio, PATCH orders + PEDIDO_ATUALIZADO)
+- [x] COT-02 Troca de fornecedor pós-aprovação volta para COTACAO (transições + cancela pedidos ABERTO + desmarca chosen)
+- [x] NF-01 Nota fiscal vinculada ao PEDIDO (aba Pedidos lista NFs do pedido; XML auto-salvo já linkado)
+- [x] FIN-01 Relatórios entidade financeiro (pedidos aberto/pago/recebido/cancelado + estoque valorizado)
+- [x] FIN-02 Métricas financeiras no dashboard (estoque + mês, admin/gestor)
+- Migration v13 aplicada (delivery_deadline, tracking_code, notes, folder recibo_pagamento)
+- Gates: lint 0 · tsc 0 · 47/47 · build OK
 ## FASE 09 — Offline-first v1 [CONCLUIDA 2026-09-26]
 - [x] Migration v9 + outbox + sync + idempotencia (38 testes, E2E sem duplicar)
 - [ ] 10 BotIA LLM (hoje só determinístico)

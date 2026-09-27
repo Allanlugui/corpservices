@@ -22,4 +22,14 @@ describe("purchase-states", () => {
     expect(canTransitionPurchase("CONCLUIDA", "CANCELADA")).toBe(false);
     expect(canTransitionPurchase("CANCELADA", "SOLICITADA")).toBe(false);
   });
+
+  it("COT-02: troca de fornecedor volta a COTACAO com re-aprovacao", () => {
+    expect(canTransitionPurchase("APROVADA", "COTACAO")).toBe(true);
+    expect(canTransitionPurchase("NEGOCIACAO", "COTACAO")).toBe(true);
+    expect(canTransitionPurchase("PAGAMENTO", "COTACAO")).toBe(true);
+    // terminais e recebimento nao reabrem cotacao
+    expect(canTransitionPurchase("RECEBIDA", "COTACAO")).toBe(false);
+    expect(canTransitionPurchase("CONCLUIDA", "COTACAO")).toBe(false);
+    expect(canTransitionPurchase("CANCELADA", "COTACAO")).toBe(false);
+  });
 });
