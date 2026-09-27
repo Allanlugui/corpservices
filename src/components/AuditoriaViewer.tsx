@@ -5,6 +5,7 @@ import { FilterBar } from "./ui/filterbar";
 import { DataTable } from "./ui/table";
 import { LoadingState } from "./ui/skeleton";
 import { ErrorState } from "./ui/states";
+import { Badge } from "./ui/badge";
 
 interface LogRow {
   id: string;
@@ -22,6 +23,8 @@ export function AuditoriaViewer() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chain, setChain] = useState<{ ok: boolean; checked: number; break_at: string | null } | null>(null);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     fetch(`/api/auditoria?entity=${entity}&limit=200`)
@@ -44,6 +47,31 @@ export function AuditoriaViewer() {
 
   return (
     <div>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        {chain ? (
+          <Badge tone={chain.ok ? "ok" : "blocked"}>
+            {chain.ok ? `Cadeia íntegra (${chain.checked})` : `Cadeia QUEBRADA em ${chain.break_at}`}
+          </Badge>
+        ) : null}
+        <button
+          type="button"
+          disabled={verifying}
+          onClick={() => {
+            setVerifying(true);
+            fetch("/api/auditoria/verify")
+              .then(async (res) => {
+                const json = await res.json();
+                if (!res.ok || json.error) setError(json.error?.message ?? "Falha na verificação.");
+                else setChain(json.data);
+              })
+              .catch(() => setError("Falha de rede."))
+              .finally(() => setVerifying(false));
+          }}
+          className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold"
+        >
+          {verifying ? "Verificando…" : "Verificar cadeia (D-09)"}
+        </button>
+      </div>
       <FilterBar searchValue={search} onSearch={setSearch} searchPlaceholder="Buscar por usuário, evento, detalhe…">
         <select value={entity} onChange={(e) => setEntity(e.target.value)} aria-label="Filtrar por entidade" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm">
           <option value="todas">Todas</option>
