@@ -175,3 +175,9 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - Backup: tabelas novas incluídas (app_settings, goals, email_queue, email_signatures, push_subscriptions).
 - TODO higienizado: zero checkboxes abertos.
 - ESCOPO: todo o planejado executado. Fora de escopo (informativo): WhatsApp, fotos offline, sync bidirecional total, BI externo.
+
+## FASE 17 — Acompanhamento segue a conversão + redesign público (2026-09-27)
+- Problema: convertido, o cliente não via mais nada (só status do chamado parado).
+- Fix: migration v18 — RPC devolve destino_os/destino_compra (número, status, marcos; sem atores/valores). Verificado via pg: ticket 4 → OS-1 ENCERRADA + 8 marcos.
+- Redesign /solicitar/acompanhar: herói do protocolo, stepper 4 etapas, cards de destino com timeline, rótulos pt-BR (lib public-status + 4 testes), mobile-first, sem login.
+- Gates: lint 0 err · tsc 0 · 76/76 · build OK · deploy READY · acompanhar 200.
