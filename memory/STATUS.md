@@ -208,3 +208,10 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - F20 Sync pull: GET /api/sync/pull (mudanças desde since) + badge NOVIDADES no header.
 - F21 BI externo: /api/bi/export (4 fatos + 2 dimensões, JSON/CSV) + downloads em Relatórios.
 - Gates: lint 0 err · tsc 0 · 81/81 · build OK · deploy READY.
+
+## FASE 29 — Hash nos eventos de negócio (2026-09-27, fecha P-09)
+- Migration v23: previous_hash/hash/version nas 3 tabelas + backfill v1 por pai (54+46+75 linhas, 31 cadeias validadas via pg).
+- 12 pontos de escrita migrados para append*Event (client_key preservado no ticket/OS).
+- Verify estendido: acesso + negócio (janela 600/tabela); UI com 2 badges.
+- Gates: 91/91 · lint 0 · build OK · deploy READY.
+

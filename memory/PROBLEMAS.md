@@ -2,7 +2,7 @@
 
 ## Abertos
 - (nenhum bloqueio; ver pendências P2–P4 no TODO)
-- **P-09 (2026-09-27, re-auditoria do prompt original): NÃO VALIDADO — hash-chain só em `audit_events`; eventos de negócio (ticket/OS/compra) têm from/to + ator mas sem elo hash.** Para §22 integral, estender D-09 às 3 tabelas de eventos (Fase 29 proposta).
+- **P-09 (2026-09-27): RESOLVIDO (Fase 29)** — hash-chain estendida aos eventos de negócio; verify cobre acesso + negócio.
 - **P-10 (2026-09-27): NÃO VALIDADO — relatórios sem filtros de departamento/categoria/fornecedor/produto/usuário (§29).** Entidade/período/status prontos; demais exigem colunas que nem sempre existem (ex: departamento no ticket).
 - **P-11 (2026-09-27): NÃO VALIDADO — breakpoints §30 (1440→360) nunca medidos em device lab;** responsivo implementado (drawer, tabelas adaptadas) mas sem evidência por largura.
 - **P-12 (2026-09-27): NÃO VALIDADO — E2E automatizado (§37) era script temporário removido;** cobertura atual é vitest de domínio (89). Playwright segue fora.
