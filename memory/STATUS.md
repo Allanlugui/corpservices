@@ -189,6 +189,19 @@ Feito (validado): Fases 00–07, correção UX, 2 revisões. Pendente real:
 - Gaps encontrados e fechados nesta auditoria: D-09 hash-chain (Fase 16), backup tabelas novas, destino do convertido (Fase 17).
 - Restam apenas itens fora de escopo: WhatsApp, fotos offline, sync bidirecional total, BI externo.
 
+## REVISÃO DO USUÁRIO — lote 1 (2026-09-27, fases 22–26)
+- Portal: /solicitar é o caminho correto (formulário público com protocolo); Gemini antes só classificava na triagem — agora há Assistente conversacional (chat conduz, interpreta, preenche; formulário mantido como alternativa).
+- F22 Nav enxuta: sino vira dropdown (recentes + ver todas); /notificacoes oculta do menu; Fornecedores vira filho de Compras; Relatórios mora em Configurações; Metas REMOVIDA (UI + API; tabela dormente).
+- F23 Overlay de permissões: canSession em 30 rotas + menu; matriz UI por usuário.
+- F24 Equipe: convite com senha provisória por e-mail + troca obrigatória no 1º acesso (must_reset + /redefinir-senha); desativar/reativar; migration v20.
+- F25 Perfil real: nome, foto, troca de senha; avatar no cabeçalho.
+- F26 Locais: árvore em Configurações; portal com seletor + detalhe; OS herda; visível em chamado/OS (migration v21).
+- F27 Relatórios: PDF documento (novo endpoint) no lugar de imprimir página; financeiro com contagens + série 6 meses.
+- F28 Logs: exportação TXT/CSV/JSON no visualizador.
+- Parâmetros com linguagem simples.
+- Gates: 89/89 · lint 0 err · build OK · deploys READY.
+- Aguardado: prompt original de 43 seções (usuário vai colar) para re-auditoria total.
+
 ## FASE 18–21 — Fora do escopo executado (2026-09-27)
 - F18 WhatsApp: fila + Meta Cloud API (template) + telefone próprio + worker + UI + health (migration v19; credenciais pendentes → PENDENTE honesto).
 - F19 Fotos offline: blob em IndexedDB + op file.upload + replay no sync + badge PENDENTE.
