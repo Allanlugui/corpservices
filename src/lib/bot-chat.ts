@@ -35,7 +35,7 @@ export interface ChatReply {
   ready: boolean;
 }
 
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-2.5-flash";
 
 function slots(kind: "servico" | "compra" | null): string {
   if (kind === "servico") return "campos que faltam (alguns de): descricao do problema, prioridade (baixa/media/alta/critica), equipamento (opcional)";

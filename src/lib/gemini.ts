@@ -7,7 +7,7 @@ import { DeterministicProvider, type AIProvider, type TicketKind, type TriageInp
  * Nunca decide: só sugere kind + faltantes (humano confirma na triagem).
  */
 
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-2.5-flash";
 
 function parseTriageJson(text: string, fallbackKind: TicketKind): { suggestedKind: TicketKind; missingFields: string[]; summary: string } | null {
   try {
@@ -25,7 +25,7 @@ function parseTriageJson(text: string, fallbackKind: TicketKind): { suggestedKin
 }
 
 export class GeminiProvider implements AIProvider {
-  readonly name = "gemini-2.0-flash";
+  readonly name = "gemini-2.5-flash";
   private fallback = new DeterministicProvider();
 
   constructor(private apiKey: string) {}

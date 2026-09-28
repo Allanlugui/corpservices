@@ -22,7 +22,7 @@ async function viaGemini(task: string, text: string): Promise<string | null> {
         : task === "level"
           ? 'Classifique em JSON {"value":"baixa"|"media"|"alta"|"critica"|null}: nível de urgência.'
           : 'Classifique em JSON {"value":true|false|null}: o usuário CONFIRMOU?';
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
