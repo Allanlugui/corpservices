@@ -46,6 +46,8 @@ export default function SolicitarPage() {
   const [created, setCreated] = useState<Created | null>(null);
   const [queued, setQueued] = useState(false);
   const [botMode, setBotMode] = useState(true);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoMsg, setPhotoMsg] = useState<string | null>(null);
   const [locations, setLocations] = useState<{ id: string; path: string }[]>([]);
   const [locationId, setLocationId] = useState("");
   const [locationDetail, setLocationDetail] = useState("");
@@ -96,6 +98,19 @@ export default function SolicitarPage() {
         return;
       }
       setCreated(json.data as Created);
+      // Anexos (fotos/documentos) sobem com o token, sem login.
+      if (photos.length > 0) {
+        try {
+          const fd = new FormData();
+          fd.append("token", (json.data as Created).tracking_token);
+          photos.slice(0, 5).forEach((f) => fd.append("files", f));
+          const up = await fetch("/api/tickets/anexar", { method: "POST", body: fd });
+          const upJson = await up.json().catch(() => null);
+          setPhotoMsg(up.ok && !upJson?.error ? `${photos.length} anexo(s) enviado(s).` : "Ticket criado, mas um anexo falhou.");
+        } catch {
+          setPhotoMsg("Ticket criado; anexos ficam para depois (sem conexão no envio).");
+        }
+      }
     } catch {
       // Offline: entra na fila com chave idempotente; sincroniza ao reconectar.
       saveQueue(enqueue(loadQueue(), { key, type: "ticket.create", payload: { kind, requester_name: name, requester_email: email, fields, location_id: locationId || null, location_detail: locationDetail } }));
@@ -134,6 +149,7 @@ export default function SolicitarPage() {
               Nossa triagem sugeriu completar: {created.missing_fields.join(", ")}. Um atendente pode pedir esses dados.
             </p>
           ) : null}
+          {photoMsg ? <p className="mt-3 text-sm text-slate-700">{photoMsg}</p> : null}
           <p className="mt-3 text-xs text-slate-500">
             Envio do link por e-mail: PENDENTE (sem provedor SMTP configurado). Por enquanto, salve o link acima.
           </p>
@@ -223,6 +239,21 @@ export default function SolicitarPage() {
               <ul className="mt-2 list-disc pl-5">
                 {Object.entries(fields).map(([k, v]) => <li key={k}><strong>{k}:</strong> {v}</li>)}
               </ul>
+              <div className="mt-3">
+                <label className="block text-sm font-medium">Fotos/documentos (opcional, até 5)
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    multiple
+                    onChange={(e) => {
+                      const list = [...(e.target.files ?? [])].filter((f) => ["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(f.type)).slice(0, 5);
+                      setPhotos(list);
+                    }}
+                    className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:font-semibold file:text-white"
+                  />
+                </label>
+                {photos.length > 0 ? <p className="mt-1 text-xs text-slate-500">{photos.length} arquivo(s) pronto(s) para envio.</p> : null}
+              </div>
               <p className="mt-3 text-xs text-slate-500">Fotos e documentos: disponiveis a partir da FASE 08 (explorador de arquivos).</p>
             </div>
           )}

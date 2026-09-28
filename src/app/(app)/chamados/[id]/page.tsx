@@ -38,6 +38,7 @@ interface Detail {
     created_at: string;
   };
   events: { event: string; from_status: string | null; to_status: string | null; detail: Record<string, unknown>; actor_name: string; created_at: string }[];
+  attachments: { id: string; mime: string; size_bytes: number; url: string | null; created_at: string }[];
 }
 
 const NEXT: Record<string, { label: string; to: string }[]> = {
@@ -226,6 +227,7 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
   if (error && !detail) return <ErrorState title="Chamado indisponível" description={error} onRetry={() => window.location.reload()} />;
   if (!detail) return <LoadingState label="Carregando chamado…" />;
   const { ticket, events } = detail;
+  const attachments = detail.attachments ?? [];
 
   return (
     <section>
@@ -259,6 +261,24 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
                     <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
                       A triagem sugere completar: {ticket.ai_missing_fields.join(", ")}.
                     </p>
+                  ) : null}
+                  {attachments.length > 0 ? (
+                    <div className="mt-3 border-t border-slate-100 pt-3">
+                      <p className="text-sm font-semibold">Anexos do solicitante ({attachments.length})</p>
+                      <ul className="mt-2 grid gap-1 text-sm">
+                        {attachments.map((a) => (
+                          <li key={a.id}>
+                            {a.url ? (
+                              <a href={a.url} target="_blank" rel="noopener" className="font-medium text-brand-700 hover:underline">
+                                {a.mime?.startsWith("image/") ? "Foto" : "Documento"} · {(a.size_bytes / 1024).toFixed(0)} KB
+                              </a>
+                            ) : (
+                              <span>Anexo indisponível</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : null}
                 </Card>
                 <Card title="Ações do gestor">

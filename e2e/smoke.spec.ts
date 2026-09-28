@@ -66,6 +66,13 @@ test("bot chat conduz com contexto (ou fallback honesto)", async ({ request }) =
   }
 });
 
+test("anexo sem token é rejeitado (capability exigida)", async ({ request }) => {
+  const res = await request.post("/api/tickets/anexar", {
+    multipart: { token: "00000000-0000-0000-0000-000000000000" },
+  });
+  expect([404, 422]).toContain(res.status());
+});
+
 test("relatórios exigem login", async ({ request }) => {
   const res = await request.get("/api/relatorios?entity=tickets", { maxRedirects: 0 });
   expect([401, 403, 307]).toContain(res.status());

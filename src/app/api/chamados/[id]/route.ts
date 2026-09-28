@@ -64,7 +64,18 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       }
       if (chain.length > 0) location_path = chain.join(" › ");
     }
-    return ok({ ticket: { ...ticket, assignee_name, location_path }, events: named, messages: messages ?? [] });
+    const { data: attachments } = await admin
+      .from("ticket_attachments")
+      .select("id, file_path, mime, size_bytes, created_at")
+      .eq("ticket_id", id)
+      .order("created_at");
+    const withUrls = await Promise.all(
+      ((attachments ?? []) as { id: string; file_path: string; mime: string; size_bytes: number; created_at: string }[]).map(async (a) => {
+        const { data: signed } = await admin.storage.from("attachments").createSignedUrl(a.file_path, 3600);
+        return { ...a, url: signed?.signedUrl ?? null };
+      }),
+    );
+    return ok({ ticket: { ...ticket, assignee_name, location_path }, events: named, messages: messages ?? [], attachments: withUrls });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);
