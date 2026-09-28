@@ -42,6 +42,6 @@ test("bot interpret rejeita payload inválido", async ({ request }) => {
 });
 
 test("relatórios exigem login", async ({ request }) => {
-  const res = await request.get("/api/relatorios?entity=tickets");
+  const res = await request.get("/api/relatorios?entity=tickets", { maxRedirects: 0 });
   expect([401, 403, 307]).toContain(res.status());
 });

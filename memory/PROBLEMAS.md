@@ -5,7 +5,7 @@
 - **P-09 (2026-09-27): RESOLVIDO (Fase 29)** — hash-chain estendida aos eventos de negócio; verify cobre acesso + negócio.
 - **P-10 (2026-09-27): PARCIALMENTE RESOLVIDO** — filtros de categoria (chamados), produto (estoque/movimentações) e fornecedor (compras) prontos. Falta: departamento e usuário (sem coluna correspondente; proposta: department em tickets + filtro por ator nos eventos).
 - **P-11 (2026-09-27): NÃO VALIDADO — breakpoints §30 (1440→360) nunca medidos em device lab;** responsivo implementado (drawer, tabelas adaptadas) mas sem evidência por largura.
-- **P-12 (2026-09-27): NÃO VALIDADO — E2E automatizado (§37) era script temporário removido;** cobertura atual é vitest de domínio (89). Playwright segue fora.
+- **P-12 (2026-09-27): RESOLVIDO** — Playwright com smoke 7/7 contra produção (somente leitura); E2E já achou bug real (middleware bloqueando /api/bot e /api/locais/public).
 - **P-13 (2026-09-27): RESOLVIDO** — Switch, UserAvatar, Alert, Combobox e DateRangePicker criados e wired (parâmetros, header, portal).
 - **P-03 (2026-09-26):** RESOLVIDO — git conectado no dashboard; deploys automaticos por push; producao validada. Sub-notas: (a) deploys CLI entram em BLOCKED (usar git); (b) preview URLs exigem SSO Vercel; (c) `health` exigiu fallback NEXT_PUBLIC_* (fix e40dc29).
 - **P-04 (2026-09-26):** Serena MCP `get_current_config` → timeout `-32001`. Memoria local + global cobre continuidade; retentar ativacao na Fase 01. NAO VALIDADO.
