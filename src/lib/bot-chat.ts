@@ -78,20 +78,22 @@ export async function chatTurn(
     const start = raw.indexOf("{");
     const end = raw.lastIndexOf("}");
     if (start < 0 || end <= start) return null;
-    const obj = JSON.parse(raw.slice(start, end + 1)) as Partial<ChatReply> & { set?: Record<string, unknown> };
+    const obj = JSON.parse(raw.slice(start, end + 1)) as Partial<ChatReply> & { set?: unknown };
     if (typeof obj.reply !== "string" || !obj.reply.trim()) return null;
-    const set = (obj.set ?? {}) as ChatReply["set"];
-    // Higieniza: só passa o que é válido.
-    if (set.kind !== "servico" && set.kind !== "compra") delete set.kind;
-    if (typeof set.email === "string" && !/.+@.+\..+/.test(set.email)) delete set.email;
+    // set fora do formato (string, array, null): ignora em vez de quebrar.
+    const rawSet = (typeof obj.set === "object" && obj.set !== null ? obj.set : {}) as Record<string, unknown>;
+    const set: ChatReply["set"] = {};
+    if (rawSet.kind === "servico" || rawSet.kind === "compra") set.kind = rawSet.kind;
     for (const k of ["name", "email", "locationId", "locationDetail"] as const) {
-      if (set[k] !== undefined && typeof set[k] !== "string") delete set[k];
+      if (typeof rawSet[k] === "string" && (rawSet[k] as string).trim()) set[k] = (rawSet[k] as string).slice(0, 300);
     }
-    if (set.fields && typeof set.fields === "object") {
-      for (const [k, v] of Object.entries(set.fields)) {
-        if (typeof v !== "string") delete (set.fields as Record<string, unknown>)[k];
-        else (set.fields as Record<string, string>)[k] = v.slice(0, 1000);
+    if (typeof set.email === "string" && !/.+@.+\..+/.test(set.email)) delete set.email;
+    if (rawSet.fields && typeof rawSet.fields === "object" && !Array.isArray(rawSet.fields)) {
+      const f: Record<string, string> = {};
+      for (const [k, v] of Object.entries(rawSet.fields as Record<string, unknown>)) {
+        if (typeof v === "string" && v.trim()) f[k] = v.slice(0, 1000);
       }
+      if (Object.keys(f).length > 0) set.fields = f;
     }
     return {
       reply: obj.reply.slice(0, 600),
