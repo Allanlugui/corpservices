@@ -3,7 +3,7 @@
 ## Abertos
 - (nenhum bloqueio; ver pendências P2–P4 no TODO)
 - **P-09 (2026-09-27): RESOLVIDO (Fase 29)** — hash-chain estendida aos eventos de negócio; verify cobre acesso + negócio.
-- **P-10 (2026-09-27): PARCIALMENTE RESOLVIDO** — filtros de categoria (chamados), produto (estoque/movimentações) e fornecedor (compras) prontos. Falta: departamento e usuário (sem coluna correspondente; proposta: department em tickets + filtro por ator nos eventos).
+- **P-10 (2026-09-27): RESOLVIDO** — categoria/produto/fornecedor + departamento (coluna + ação + filtro) + usuário (filtro por ator na auditoria).
 - **P-11 (2026-09-27): NÃO VALIDADO — breakpoints §30 (1440→360) nunca medidos em device lab;** responsivo implementado (drawer, tabelas adaptadas) mas sem evidência por largura.
 - **P-12 (2026-09-27): RESOLVIDO** — Playwright com smoke 7/7 contra produção (somente leitura); E2E já achou bug real (middleware bloqueando /api/bot e /api/locais/public).
 - **P-13 (2026-09-27): RESOLVIDO** — Switch, UserAvatar, Alert, Combobox e DateRangePicker criados e wired (parâmetros, header, portal).
