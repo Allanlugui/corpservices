@@ -31,6 +31,7 @@ interface Detail {
     ai_suggested_kind: string | null;
     ai_missing_fields: string[];
     assignee_name: string | null;
+    department: string | null;
     location_id: string | null;
     location_detail: string | null;
     location_path: string | null;
@@ -91,6 +92,23 @@ function AssignPicker({ onAssign, busy }: { onAssign: (id: string | null) => voi
         </Button>
         <Button variant="ghost" disabled={busy} onClick={() => onAssign(null)}>
           Remover
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function DepartmentPicker({ current, busy, onSave }: { current: string; busy: boolean; onSave: (d: string) => void }) {
+  const [value, setValue] = useState(current);
+  return (
+    <div className="grid gap-2 border-t border-slate-100 pt-2">
+      <label className="block text-sm font-medium">
+        Setor responsável
+        <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Ex: Manutenção, TI, Limpeza" maxLength={120} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+      </label>
+      <div>
+        <Button variant="secondary" disabled={busy || value.trim().length < 2} onClick={() => onSave(value.trim())}>
+          Definir setor
         </Button>
       </div>
     </div>
@@ -246,6 +264,7 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
                 <Card title="Ações do gestor">
                   <p className="mb-2 text-sm text-slate-600">
                     Responsável: <strong>{ticket.assignee_name ?? "não atribuído"}</strong>
+                    {ticket.department ? <> · Setor: <strong>{ticket.department}</strong></> : null}
                   </p>
                   <div className="grid gap-2">
                     {(NEXT[ticket.status] ?? []).map((a) => (
@@ -256,6 +275,12 @@ export default function ChamadoDetailPage({ params }: { params: Promise<{ id: st
                     <AssignPicker
                       onAssign={(assigned_to) => void act({ action: "assign", assigned_to }, assigned_to ? "Atribuir" : "Remover atribuição")}
                       busy={busy}
+                    />
+                    <DepartmentPicker
+                      key={`${ticket.id}-${ticket.department ?? ""}`}
+                      current={ticket.department ?? ""}
+                      busy={busy}
+                      onSave={(department) => void act({ action: "department", department }, "Definir setor")}
                     />
                     {(ticket.status === "EM_ANALISE" || ticket.status === "EM_TRIAGEM") && (
                       <>

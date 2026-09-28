@@ -8,6 +8,7 @@ const querySchema = z.object({
   periodo: z.enum(["dia", "semana", "mes", "trimestre", "ano", "tudo"]).default("mes"),
   status: z.string().optional(),
   categoria: z.string().max(80).optional(),
+  departamento: z.string().max(120).optional(),
   produto: z.string().max(120).optional(),
   fornecedor: z.string().max(120).optional(),
   format: z.enum(["json", "csv"]).default("json"),
@@ -46,6 +47,7 @@ export type ReportPeriodo = keyof typeof PERIOD_MS;
 export interface ReportFilters {
   status?: string;
   categoria?: string;
+  departamento?: string;
   produto?: string;
   fornecedor?: string;
 }
@@ -104,9 +106,10 @@ export async function buildReportRows(
       rows.push({ indicador: `Pago em ${label} (R$)`, valor: toRs(tot(["PAGO"])) });
     }
   } else if (entity === "tickets") {
-    let q = admin.from("tickets").select("number, kind, status, requester_name, requester_email, created_at").eq("org_id", orgId).gte("created_at", since).order("created_at", { ascending: false }).limit(500);
+    let q = admin.from("tickets").select("number, kind, status, department, requester_name, requester_email, created_at").eq("org_id", orgId).gte("created_at", since).order("created_at", { ascending: false }).limit(500);
     if (f.status) q = q.eq("status", f.status);
     if (f.categoria) q = q.ilike("category", `%${f.categoria}%`);
+    if (f.departamento) q = q.ilike("department", `%${f.departamento}%`);
     rows = ((await q).data ?? []) as Record<string, unknown>[];
   } else if (entity === "os") {
     let q = admin.from("work_orders").select("number, title, status, priority, sla_remaining_ms, started_at, finished_at, created_at").eq("org_id", orgId).gte("created_at", since).order("created_at", { ascending: false }).limit(500);
@@ -171,13 +174,13 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const parsed = querySchema.safeParse(Object.fromEntries(url.searchParams));
     if (!parsed.success) return fail("VALIDATION", "Filtros invalidos.", 422);
-    const { entity, periodo, status, categoria, produto, fornecedor, format } = parsed.data;
+    const { entity, periodo, status, categoria, departamento, produto, fornecedor, format } = parsed.data;
     const [module, action] = PERM[entity] as [string, string];
     if (!canSession(session, module as "tickets", action as "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const admin = createAdminClient();
-    const rows = await buildReportRows(admin, session.orgId, entity, periodo, status, { status, categoria, produto, fornecedor });
+    const rows = await buildReportRows(admin, session.orgId, entity, periodo, status, { status, categoria, departamento, produto, fornecedor });
     if (format === "csv") {
       return new Response(toCsv(rows), {
         status: 200,

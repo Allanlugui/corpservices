@@ -21,13 +21,26 @@ export function AuditoriaViewer() {
   const [rows, setRows] = useState<LogRow[]>([]);
   const [entity, setEntity] = useState("todas");
   const [search, setSearch] = useState("");
+  const [actor, setActor] = useState("");
+  const [members, setMembers] = useState<{ id: string; display_name: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [chain, setChain] = useState<{ ok: boolean; checked: number; break_at: string | null; business?: { ok: boolean; checked: number; break_at: string | null } } | null>(null);
   const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/auditoria?entity=${entity}&limit=200`)
+    fetch("/api/team")
+      .then(async (res) => {
+        const json = await res.json();
+        if (res.ok && !json.error) setMembers(json.data.members);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams({ entity, limit: "200" });
+    if (actor) params.set("actor", actor);
+    fetch(`/api/auditoria?${params.toString()}`)
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok || json.error) setError(json.error?.message ?? "Falha ao carregar.");
@@ -35,7 +48,7 @@ export function AuditoriaViewer() {
       })
       .catch(() => setError("Falha de rede."))
       .finally(() => setLoading(false));
-  }, [entity]);
+  }, [entity, actor]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -87,6 +100,10 @@ export function AuditoriaViewer() {
           <option value="compras">Compras</option>
           <option value="estoque">Estoque</option>
           <option value="acesso">Acesso</option>
+        </select>
+        <select value={actor} onChange={(e) => setActor(e.target.value)} aria-label="Filtrar por usuário" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm">
+          <option value="">Todos os usuários</option>
+          {members.map((m) => <option key={m.id} value={m.id}>{m.display_name ?? m.id.slice(0, 8)}</option>)}
         </select>
       </FilterBar>
       {loading ? (

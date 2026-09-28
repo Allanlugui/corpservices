@@ -42,6 +42,7 @@ const COMPRA: Record<string, string> = {
 const EVENTOS: Record<string, string> = {
   CRIADO: "Recebida",
   ALTERADO: "Atualizada",
+  DEPARTAMENTO: "Classificado no setor",
   CONVERTIDO: "Encaminhada para execução",
   DESIGNADO: "Responsável designado",
   INICIADO: "Execução iniciada",

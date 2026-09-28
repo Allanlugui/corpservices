@@ -12,6 +12,7 @@ const querySchema = z.object({
   entity: z.enum(["tickets", "os", "compras", "estoque", "acesso", "todas"]).default("todas"),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   search: z.string().max(120).optional(),
+  actor: z.string().uuid().optional(),
 });
 
 export async function GET(request: Request) {
@@ -24,13 +25,15 @@ export async function GET(request: Request) {
     const parsed = querySchema.safeParse(Object.fromEntries(url.searchParams));
     if (!parsed.success) return fail("VALIDATION", "Filtros invalidos.", 422);
     const admin = createAdminClient();
-    const { entity, limit, search } = parsed.data;
+    const { entity, limit, search, actor } = parsed.data;
 
     const out: { id: string; at: string; entidade: string; evento: string; detalhe: string; actor: string }[] = [];
     const actorIds: string[] = [];
 
     if (entity === "todas" || entity === "tickets") {
-      const { data } = await admin.from("ticket_events").select("id, created_at, event, from_status, to_status, actor_profile_id").order("created_at", { ascending: false }).limit(limit);
+      let q = admin.from("ticket_events").select("id, created_at, event, from_status, to_status, actor_profile_id").order("created_at", { ascending: false }).limit(limit);
+      if (actor) q = q.eq("actor_profile_id", actor);
+      const { data } = await q;
       for (const r of data ?? []) {
         const det = `${r.from_status ?? ""}→${r.to_status ?? ""}`;
         if (search && !(r.event + det).toLowerCase().includes(search.toLowerCase())) continue;
@@ -39,7 +42,9 @@ export async function GET(request: Request) {
       }
     }
     if (entity === "todas" || entity === "os") {
-      const { data } = await admin.from("work_order_events").select("id, created_at, event, from_status, to_status, actor_profile_id").order("created_at", { ascending: false }).limit(limit);
+      let q = admin.from("work_order_events").select("id, created_at, event, from_status, to_status, actor_profile_id").order("created_at", { ascending: false }).limit(limit);
+      if (actor) q = q.eq("actor_profile_id", actor);
+      const { data } = await q;
       for (const r of data ?? []) {
         const det = `${r.from_status ?? ""}→${r.to_status ?? ""}`;
         if (search && !(r.event + det).toLowerCase().includes(search.toLowerCase())) continue;
@@ -48,7 +53,9 @@ export async function GET(request: Request) {
       }
     }
     if (entity === "todas" || entity === "compras") {
-      const { data } = await admin.from("purchase_events").select("id, created_at, event, from_status, to_status, actor_profile_id").order("created_at", { ascending: false }).limit(limit);
+      let q = admin.from("purchase_events").select("id, created_at, event, from_status, to_status, actor_profile_id").order("created_at", { ascending: false }).limit(limit);
+      if (actor) q = q.eq("actor_profile_id", actor);
+      const { data } = await q;
       for (const r of data ?? []) {
         const det = `${r.from_status ?? ""}→${r.to_status ?? ""}`;
         if (search && !(r.event + det).toLowerCase().includes(search.toLowerCase())) continue;
@@ -57,7 +64,9 @@ export async function GET(request: Request) {
       }
     }
     if (entity === "todas" || entity === "estoque") {
-      const { data } = await admin.from("inventory_movements").select("id, created_at, kind, quantity, reason, actor_profile_id").order("created_at", { ascending: false }).limit(limit);
+      let q = admin.from("inventory_movements").select("id, created_at, kind, quantity, reason, actor_profile_id").order("created_at", { ascending: false }).limit(limit);
+      if (actor) q = q.eq("actor_profile_id", actor);
+      const { data } = await q;
       for (const r of data ?? []) {
         const det = `${r.quantity} — ${r.reason}`;
         if (search && !((r.kind as string) + det).toLowerCase().includes(search.toLowerCase())) continue;
@@ -66,7 +75,9 @@ export async function GET(request: Request) {
       }
     }
     if (entity === "todas" || entity === "acesso") {
-      const { data } = await admin.from("audit_events").select("id, created_at, event, user_id").eq("org_id", session.orgId).order("created_at", { ascending: false }).limit(limit);
+      let q = admin.from("audit_events").select("id, created_at, event, user_id").eq("org_id", session.orgId).order("created_at", { ascending: false }).limit(limit);
+      if (actor) q = q.eq("user_id", actor);
+      const { data } = await q;
       for (const r of data ?? []) {
         if (search && !(r.event as string).toLowerCase().includes(search.toLowerCase())) continue;
         if (r.user_id) actorIds.push(r.user_id as string);

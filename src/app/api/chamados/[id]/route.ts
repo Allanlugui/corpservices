@@ -16,6 +16,7 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("advance"), to: z.enum(TICKET_STATUSES), client_key: z.string().uuid().optional() }),
   z.object({ action: z.literal("convert"), target: z.enum(["os", "compra"]), client_key: z.string().uuid().optional() }),
   z.object({ action: z.literal("assign"), assigned_to: z.string().uuid().nullable(), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("department"), department: z.string().trim().max(120) }),
 ]);
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -105,6 +106,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     let to: TicketStatus;
     let event: string;
     let detail: Record<string, unknown> = { actor: session.email };
+    if (parsed.data.action === "department") {
+      // Departamento: classificação interna, sem mudar estado (gera evento).
+      const { error: depError } = await admin.from("tickets").update({ department: parsed.data.department }).eq("id", id);
+      if (depError) return fail("DB_UPDATE", "Nao foi possivel salvar.", 500);
+      await appendTicketEvent(admin, id, {
+        event: "DEPARTAMENTO",
+        from,
+        to: from,
+        actorId: session.userId,
+        detail: { ...detail, department: parsed.data.department },
+        clientKey: clientKey ?? null,
+      });
+      return ok({ id, from, to: from });
+    }
     if (parsed.data.action === "advance") {
       to = transition(from, parsed.data.to);
       event = to === "RESOLVIDO" ? "RESOLVIDO" : to === "ENCERRADO" ? "ENCERRADO" : "ALTERADO";

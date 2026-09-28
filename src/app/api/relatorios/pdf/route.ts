@@ -24,11 +24,12 @@ export async function GET(request: Request) {
       periodo: z.enum(["dia", "semana", "mes", "trimestre", "ano", "tudo"]).default("mes"),
       status: z.string().optional(),
       categoria: z.string().max(80).optional(),
+      departamento: z.string().max(120).optional(),
       produto: z.string().max(120).optional(),
       fornecedor: z.string().max(120).optional(),
     }).safeParse(Object.fromEntries(url.searchParams));
     if (!parsed.success) return fail("VALIDATION", "Filtros invalidos.", 422);
-    const { entity, periodo, status, categoria, produto, fornecedor } = parsed.data;
+    const { entity, periodo, status, categoria, departamento, produto, fornecedor } = parsed.data;
     const moduleOf: Record<string, "tickets" | "work_orders" | "purchases" | "inventory" | "reports"> = {
       tickets: "tickets",
       os: "work_orders",
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const admin = createAdminClient();
-    const rows = await buildReportRows(admin, session.orgId, entity as ReportEntity, periodo as ReportPeriodo, status, { status, categoria, produto, fornecedor });
+    const rows = await buildReportRows(admin, session.orgId, entity as ReportEntity, periodo as ReportPeriodo, status, { status, categoria, departamento, produto, fornecedor });
     const headers = rows.length > 0 ? Object.keys(rows[0]) : ["sem dados"];
     const tableRows = rows.slice(0, 300).map((r) => headers.map((h) => String(r[h] ?? "—").slice(0, 60)));
     const bytes = await buildPdf({

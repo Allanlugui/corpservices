@@ -33,6 +33,7 @@ export default function RelatoriosPage() {
   const [periodo, setPeriodo] = useState("mes");
   const [status, setStatus] = useState("");
   const [categoria, setCategoria] = useState("");
+  const [departamento, setDepartamento] = useState("");
   const [produto, setProduto] = useState("");
   const [fornecedor, setFornecedor] = useState("");
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
@@ -43,6 +44,7 @@ export default function RelatoriosPage() {
     const params = new URLSearchParams({ entity, periodo, ...(extra ?? {}) });
     if (status) params.set("status", status);
     if (entity === "tickets" && categoria.trim()) params.set("categoria", categoria.trim());
+    if (entity === "tickets" && departamento.trim()) params.set("departamento", departamento.trim());
     if ((entity === "estoque" || entity === "movimentacoes") && produto.trim()) params.set("produto", produto.trim());
     if (entity === "compras" && fornecedor.trim()) params.set("fornecedor", fornecedor.trim());
     return params;
@@ -58,7 +60,7 @@ export default function RelatoriosPage() {
       .catch(() => setError("Falha de rede."))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entity, periodo, status, categoria, produto, fornecedor]);
+  }, [entity, periodo, status, categoria, departamento, produto, fornecedor]);
 
   function exportCsv() {
     window.open(`/api/relatorios?${buildParams({ format: "csv" }).toString()}`, "_blank", "noopener");
@@ -104,6 +106,9 @@ export default function RelatoriosPage() {
         <input value={status} onChange={(e) => setStatus(e.target.value.toUpperCase())} placeholder="Status exato (opcional)" aria-label="Status exato" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm" />
         {entity === "tickets" ? (
           <input value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Categoria (opcional)" aria-label="Categoria" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm" />
+        ) : null}
+        {entity === "tickets" ? (
+          <input value={departamento} onChange={(e) => setDepartamento(e.target.value)} placeholder="Setor (opcional)" aria-label="Setor" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm" />
         ) : null}
         {entity === "estoque" || entity === "movimentacoes" ? (
           <input value={produto} onChange={(e) => setProduto(e.target.value)} placeholder="Produto (opcional)" aria-label="Produto" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm" />
