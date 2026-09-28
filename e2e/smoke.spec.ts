@@ -70,3 +70,14 @@ test("relatórios exigem login", async ({ request }) => {
   const res = await request.get("/api/relatorios?entity=tickets", { maxRedirects: 0 });
   expect([401, 403, 307]).toContain(res.status());
 });
+
+test("bot não pula o nome após o tipo (regressão off-by-one)", async ({ page }) => {
+  await page.goto("/solicitar");
+  await page.getByRole("textbox", { name: /mensagem/i }).fill("compra de material");
+  await page.getByRole("button", { name: /enviar/i }).click();
+  await expect(page.getByText(/qual seu nome/i).last()).toBeVisible({ timeout: 15000 });
+  await page.getByRole("textbox", { name: /mensagem/i }).fill("allan");
+  await page.getByRole("button", { name: /enviar/i }).click();
+  // "allan" é nome, não e-mail: não pode cair na validação de e-mail.
+  await expect(page.getByText(/parece inv.lido/i).first()).toBeHidden({ timeout: 15000 });
+});
