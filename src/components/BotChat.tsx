@@ -51,6 +51,8 @@ export function BotChat({ locations, onDone }: { locations: { id: string; path: 
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  // Quando o LLM declara ready, a próxima resposta confirma o envio.
+  const pendingConfirm = useRef<Collected | null>(null);
 
   const steps: (BotField | { key: "__kind" } | { key: "__confirm" })[] = collected.kind
     ? [...BOT_COMMON, ...(collected.kind === "servico" ? BOT_SERVICO : BOT_COMPRA), { key: "__confirm" }]
@@ -102,7 +104,8 @@ export function BotChat({ locations, onDone }: { locations: { id: string; path: 
       });
       const json = await res.json();
       if (!res.ok || json.error) {
-        setError(json.error?.message ?? "Falha ao enviar.");
+        const det = json.error?.details ? ` (${Object.keys(json.error.details).join(", ")})` : "";
+        setError(`${json.error?.message ?? "Falha ao enviar."}${det}`);
         push({ from: "bot", text: "Não consegui enviar. Tente de novo ou use o formulário." });
         return;
       }
@@ -123,6 +126,69 @@ export function BotChat({ locations, onDone }: { locations: { id: string; path: 
     setInput("");
     setBusy(true);
     setError(null);
+    // Confirmação pendente do modo LLM: sim envia, resto volta a conversar.
+    if (pendingConfirm.current) {
+      const col = pendingConfirm.current;
+      pendingConfirm.current = null;
+      if (/^(sim|s|isso|correto|confirmo|pode enviar|ok)\b/i.test(text.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""))) {
+        push({ from: "bot", text: "Enviando…" });
+        await submit(col);
+        setBusy(false);
+        return;
+      }
+      push({ from: "bot", text: "Certo, me diga o que ajustar." });
+      setBusy(false);
+      return;
+    }
+    try {
+      // Bot real: LLM com contexto; roteiro local se indisponível.
+      const history = [...msgs, { from: "user" as const, text }].slice(-12);
+      let usedLlm = false;
+      try {
+        const res = await fetch("/api/bot/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: history, collected, locations: locations.slice(0, 30) }),
+        });
+        const json = await res.json();
+        if (res.ok && json.data && json.data.fallback === false) {
+          usedLlm = true;
+          const col: Collected = {
+            kind: (json.data.set?.kind as BotKind) ?? collected.kind,
+            name: (json.data.set?.name as string) ?? collected.name,
+            email: (json.data.set?.email as string) ?? collected.email,
+            locationId: (json.data.set?.locationId as string) ?? collected.locationId,
+            locationDetail: (json.data.set?.locationDetail as string) ?? collected.locationDetail,
+            fields: { ...collected.fields, ...((json.data.set?.fields ?? {}) as Record<string, string>) },
+          };
+          // Local resolve locationId a partir do nome, caso o LLM mande texto.
+          if (!col.locationId && col.locationDetail) {
+            const hit = locations.find((l) => l.path.toLowerCase().includes(col.locationDetail.toLowerCase()));
+            if (hit) {
+              col.locationId = hit.id;
+              col.locationDetail = "";
+            }
+          }
+          setCollected(col);
+          push({ from: "bot", text: json.data.reply as string, options: json.data.options as string[] | undefined });
+          if (json.data.ready === true) {
+            setStepIdx(Number.MAX_SAFE_INTEGER);
+            pendingConfirm.current = col;
+          }
+          return;
+        }
+      } catch {
+        /* cai no roteiro local */
+      }
+      if (!usedLlm) {
+        await localAnswer(text);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+  // Roteiro local (fallback quando o LLM indisponível): perguntas fixas.
+  async function localAnswer(text: string) {
     try {
       const step = steps[stepIdx];
       const col = { ...collected, fields: { ...collected.fields } };

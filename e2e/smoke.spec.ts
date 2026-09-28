@@ -41,6 +41,31 @@ test("bot interpret rejeita payload inválido", async ({ request }) => {
   expect(res.status()).toBe(422);
 });
 
+test("bot interpreta urgência em texto livre", async ({ request }) => {
+  const res = await request.post("/api/bot/interpret", { data: { task: "level", text: "é urgente, tudo parado" } });
+  expect(res.ok()).toBe(true);
+  const json = await res.json();
+  expect(json.data.value).toBe("critica");
+});
+
+test("bot chat conduz com contexto (ou fallback honesto)", async ({ request }) => {
+  const res = await request.post("/api/bot/chat", {
+    data: {
+      messages: [{ from: "user", text: "o ar condicionado da sala 205 parou de gelar" }],
+      collected: { kind: null, name: "", email: "", locationId: "", locationDetail: "", fields: {} },
+      locations: [],
+    },
+  });
+  expect(res.ok()).toBe(true);
+  const json = await res.json();
+  if (json.data.fallback === false) {
+    expect(typeof json.data.reply).toBe("string");
+    expect(json.data.set?.kind).toBe("servico");
+  } else {
+    expect(json.data.fallback).toBe(true);
+  }
+});
+
 test("relatórios exigem login", async ({ request }) => {
   const res = await request.get("/api/relatorios?entity=tickets", { maxRedirects: 0 });
   expect([401, 403, 307]).toContain(res.status());

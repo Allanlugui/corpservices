@@ -40,8 +40,33 @@ export async function POST(request: Request) {
   } catch {
     return fail("INVALID_JSON", "Corpo da requisicao invalido.", 400);
   }
+  // Tolerância pré-schema: normaliza em vez de rejeitar (nunca perde o pedido).
+  if (body && typeof body === "object") {
+    const b = body as Record<string, unknown>;
+    if (typeof b.location_detail === "string" && b.location_detail.length > 300) {
+      b.location_detail = b.location_detail.slice(0, 300);
+    }
+    if (b.fields && typeof b.fields === "object" && !Array.isArray(b.fields)) {
+      const f = b.fields as Record<string, unknown>;
+      for (const k of Object.keys(f)) {
+        if (typeof f[k] !== "string") f[k] = String(f[k] ?? "").slice(0, 4000);
+        else if ((f[k] as string).length > 4000) f[k] = (f[k] as string).slice(0, 4000);
+      }
+    }
+  }
   const parsed = ticketSchema.safeParse(body);
   if (!parsed.success) {
+    // Diagnóstico sem PII: registra quais chaves falharam (lê-se via pg/Logs).
+    try {
+      const admin = createAdminClient();
+      await admin.from("system_logs").insert({
+        level: "warn",
+        source: "tickets",
+        message: `VALIDATION portal: ${Object.keys(parsed.error.flatten().fieldErrors).join(",")}`,
+      });
+    } catch {
+      /* log nunca quebra o fluxo */
+    }
     return fail("VALIDATION", "Campos invalidos.", 422, parsed.error.flatten().fieldErrors);
   }
   const { kind, requester_name, requester_email, fields } = parsed.data;
