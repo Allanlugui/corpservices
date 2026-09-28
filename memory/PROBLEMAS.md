@@ -2,6 +2,7 @@
 
 ## Abertos
 - (nenhum bloqueio; ver pendências P2–P4 no TODO)
+- **P-14 (2026-09-27): CHAVE GEMINI SUSPEITA — a chave informada (`AQ.Ab8…`) não tem o formato de API key do AI Studio (`AIza…`); o bot opera em fallback local (funcional, abre tickets) até uma chave válida.** Usuário precisa gerar em aistudio.google.com e atualizar `GEMINI_API_KEY` na Vercel.
 - **P-09 (2026-09-27): RESOLVIDO (Fase 29)** — hash-chain estendida aos eventos de negócio; verify cobre acesso + negócio.
 - **P-10 (2026-09-27): RESOLVIDO** — categoria/produto/fornecedor + departamento (coluna + ação + filtro) + usuário (filtro por ator na auditoria).
 - **P-11 (2026-09-27): NÃO VALIDADO — breakpoints §30 (1440→360) nunca medidos em device lab;** responsivo implementado (drawer, tabelas adaptadas) mas sem evidência por largura.
