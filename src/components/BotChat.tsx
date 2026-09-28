@@ -204,7 +204,9 @@ export function BotChat({ locations, onDone }: { locations: { id: string; path: 
         }
         col.kind = kind;
         setCollected(col);
-        setStepIdx(stepIdx + 1);
+        // A lista de etapas muda de forma ([__kind] → [__nome, __email, ...]);
+        // recomeça do índice 0 para não pular o nome (off-by-one que prendia no e-mail).
+        setStepIdx(0);
         push({ from: "bot", text: kind === "servico" ? "Entendido, manutenção. " + BOT_COMMON[0].label : "Entendido, compra. " + BOT_COMMON[0].label });
         return;
       }
@@ -230,7 +232,12 @@ export function BotChat({ locations, onDone }: { locations: { id: string; path: 
         col.name = text;
       } else if (f.key === "__email") {
         if (!isValidEmail(text)) {
-          push({ from: "bot", text: "Esse e-mail parece inválido. Confere?" });
+          // Dúvida em vez de e-mail: explica em vez de repetir o erro.
+          if (/\?|como|por ?qu[eê]|nao entendi|n[aã]o sei/i.test(text)) {
+            push({ from: "bot", text: "Preciso do seu e-mail corporativo para enviar o protocolo. É o e-mail da empresa, ex: voce@empresa.com." });
+          } else {
+            push({ from: "bot", text: "Esse e-mail parece inválido. Confere? Ex: voce@empresa.com." });
+          }
           return;
         }
         col.email = text.trim();
