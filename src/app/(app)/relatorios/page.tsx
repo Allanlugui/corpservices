@@ -32,14 +32,24 @@ export default function RelatoriosPage() {
   const [entity, setEntity] = useState<Entity>("tickets");
   const [periodo, setPeriodo] = useState("mes");
   const [status, setStatus] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [produto, setProduto] = useState("");
+  const [fornecedor, setFornecedor] = useState("");
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const params = new URLSearchParams({ entity, periodo });
+  function buildParams(extra?: Record<string, string>) {
+    const params = new URLSearchParams({ entity, periodo, ...(extra ?? {}) });
     if (status) params.set("status", status);
-    fetch(`/api/relatorios?${params.toString()}`)
+    if (entity === "tickets" && categoria.trim()) params.set("categoria", categoria.trim());
+    if ((entity === "estoque" || entity === "movimentacoes") && produto.trim()) params.set("produto", produto.trim());
+    if (entity === "compras" && fornecedor.trim()) params.set("fornecedor", fornecedor.trim());
+    return params;
+  }
+
+  useEffect(() => {
+    fetch(`/api/relatorios?${buildParams().toString()}`)
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok || json.error) setError(json.error?.message ?? "Falha ao carregar.");
@@ -47,19 +57,16 @@ export default function RelatoriosPage() {
       })
       .catch(() => setError("Falha de rede."))
       .finally(() => setLoading(false));
-  }, [entity, periodo, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entity, periodo, status, categoria, produto, fornecedor]);
 
   function exportCsv() {
-    const params = new URLSearchParams({ entity, periodo, format: "csv" });
-    if (status) params.set("status", status);
-    window.open(`/api/relatorios?${params.toString()}`, "_blank", "noopener");
+    window.open(`/api/relatorios?${buildParams({ format: "csv" }).toString()}`, "_blank", "noopener");
     toast("CSV exportado.");
   }
 
   function exportPdf() {
-    const params = new URLSearchParams({ entity, periodo });
-    if (status) params.set("status", status);
-    window.open(`/api/relatorios/pdf?${params.toString()}`, "_blank", "noopener");
+    window.open(`/api/relatorios/pdf?${buildParams().toString()}`, "_blank", "noopener");
     toast("PDF gerado.");
   }
 
@@ -95,6 +102,15 @@ export default function RelatoriosPage() {
           {PERIODS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
         </select>
         <input value={status} onChange={(e) => setStatus(e.target.value.toUpperCase())} placeholder="Status exato (opcional)" aria-label="Status exato" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm" />
+        {entity === "tickets" ? (
+          <input value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Categoria (opcional)" aria-label="Categoria" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm" />
+        ) : null}
+        {entity === "estoque" || entity === "movimentacoes" ? (
+          <input value={produto} onChange={(e) => setProduto(e.target.value)} placeholder="Produto (opcional)" aria-label="Produto" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm" />
+        ) : null}
+        {entity === "compras" ? (
+          <input value={fornecedor} onChange={(e) => setFornecedor(e.target.value)} placeholder="Fornecedor (opcional)" aria-label="Fornecedor" className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm" />
+        ) : null}
       </FilterBar>
       {loading ? (
         <LoadingState label="Gerando relatório…" />

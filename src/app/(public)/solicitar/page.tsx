@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/fields";
+import { Combobox } from "@/components/ui/extra";
 import { enqueue, loadQueue, newKey, saveQueue } from "@/lib/outbox";
 import { BotChat } from "@/components/BotChat";
 
@@ -187,10 +188,13 @@ export default function SolicitarPage() {
           )}
           {step === 2 && (
             <>
-              <Select label="Onde você está? (local)" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
-                <option value="">Selecione… (opcional)</option>
-                {locations.map((l) => <option key={l.id} value={l.id}>{l.path}</option>)}
-              </Select>
+              <Combobox
+                label="Onde você está? (busque o local)"
+                value={locationId}
+                options={locations.map((l) => ({ value: l.id, label: l.path }))}
+                onChange={setLocationId}
+                placeholder="Buscar prédio, andar, sala… (opcional)"
+              />
               <Input label="Detalhe do ponto (ex: sala 205, fundo do corredor)" value={locationDetail} onChange={(e) => setLocationDetail(e.target.value)} placeholder="Opcional — ajuda a localizar" />
             </>
           )}

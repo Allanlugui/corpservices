@@ -7,6 +7,9 @@ const querySchema = z.object({
   entity: z.enum(["tickets", "os", "compras", "estoque", "movimentacoes", "financeiro"]),
   periodo: z.enum(["dia", "semana", "mes", "trimestre", "ano", "tudo"]).default("mes"),
   status: z.string().optional(),
+  categoria: z.string().max(80).optional(),
+  produto: z.string().max(120).optional(),
+  fornecedor: z.string().max(120).optional(),
   format: z.enum(["json", "csv"]).default("json"),
 });
 
@@ -40,13 +43,22 @@ function toCsv(rows: Record<string, unknown>[]): string {
 export type ReportEntity = "tickets" | "os" | "compras" | "estoque" | "movimentacoes" | "financeiro";
 export type ReportPeriodo = keyof typeof PERIOD_MS;
 
+export interface ReportFilters {
+  status?: string;
+  categoria?: string;
+  produto?: string;
+  fornecedor?: string;
+}
+
 export async function buildReportRows(
   admin: ReturnType<typeof createAdminClient>,
   orgId: string,
   entity: ReportEntity,
   periodo: ReportPeriodo,
   status?: string,
+  filters?: ReportFilters,
 ): Promise<Record<string, unknown>[]> {
+  const f = filters ?? (status ? { status } : {});
   const since = new Date(Date.now() - PERIOD_MS[periodo]).toISOString();
   let rows: Record<string, unknown>[] = [];
 
@@ -93,23 +105,61 @@ export async function buildReportRows(
     }
   } else if (entity === "tickets") {
     let q = admin.from("tickets").select("number, kind, status, requester_name, requester_email, created_at").eq("org_id", orgId).gte("created_at", since).order("created_at", { ascending: false }).limit(500);
-    if (status) q = q.eq("status", status);
+    if (f.status) q = q.eq("status", f.status);
+    if (f.categoria) q = q.ilike("category", `%${f.categoria}%`);
     rows = ((await q).data ?? []) as Record<string, unknown>[];
   } else if (entity === "os") {
     let q = admin.from("work_orders").select("number, title, status, priority, sla_remaining_ms, started_at, finished_at, created_at").eq("org_id", orgId).gte("created_at", since).order("created_at", { ascending: false }).limit(500);
-    if (status) q = q.eq("status", status);
+    if (f.status) q = q.eq("status", f.status);
     rows = (((await q).data ?? []) as Record<string, unknown>[]).map((r) => ({ ...r, sla_restante_h: Math.round(Number(r.sla_remaining_ms) / 3600000) }));
   } else if (entity === "compras") {
     let q = admin.from("purchase_requests").select("number, origin, status, priority, justification, created_at").eq("org_id", orgId).gte("created_at", since).order("created_at", { ascending: false }).limit(500);
-    if (status) q = q.eq("status", status);
-    rows = ((await q).data ?? []) as Record<string, unknown>[];
+    if (f.status) q = q.eq("status", f.status);
+    if (f.fornecedor) {
+      const [qq, qo] = await Promise.all([
+        admin.from("purchase_quotes").select("request_id").ilike("supplier", `%${f.fornecedor}%`).limit(500),
+        admin.from("purchase_orders").select("request_id").ilike("supplier", `%${f.fornecedor}%`).limit(500),
+      ]);
+      const ids = new Set([...((qq.data ?? []) as { request_id: string }[]), ...((qo.data ?? []) as { request_id: string }[])].map((r) => r.request_id));
+      if (ids.size === 0) {
+        rows = [];
+      } else {
+        const { data } = await q.in("id", [...ids]);
+        rows = (data ?? []) as Record<string, unknown>[];
+      }
+    } else {
+      rows = ((await q).data ?? []) as Record<string, unknown>[];
+    }
   } else if (entity === "estoque") {
-    const { data } = await admin.from("products").select("name, unit, quantity, stock_min, stock_max, cost_cents, location").eq("org_id", orgId).eq("active", true).order("name").limit(500);
+    let pq = admin.from("products").select("name, unit, quantity, stock_min, stock_max, cost_cents, location").eq("org_id", orgId).eq("active", true).order("name").limit(500);
+    if (f.produto) pq = pq.ilike("name", `%${f.produto}%`);
+    const { data } = await pq;
     rows = ((data ?? []) as Record<string, unknown>[]).map((r) => ({ ...r, custo_rs: Number(r.cost_cents) / 100 }));
   } else {
-    let q = admin.from("inventory_movements").select("kind, quantity, reason, created_at").eq("org_id", orgId).gte("created_at", since).order("created_at", { ascending: false }).limit(500);
-    if (status) q = q.eq("kind", status);
-    rows = ((await q).data ?? []) as Record<string, unknown>[];
+    let q = admin.from("inventory_movements").select("kind, quantity, reason, created_at, product_id").eq("org_id", orgId).gte("created_at", since).order("created_at", { ascending: false }).limit(500);
+    if (f.status) q = q.eq("kind", f.status);
+    if (f.produto) {
+      const { data: prods } = await admin.from("products").select("id").eq("org_id", orgId).ilike("name", `%${f.produto}%`).limit(200);
+      const pids = (prods ?? []).map((p) => (p as { id: string }).id);
+      if (pids.length === 0) {
+        rows = [];
+      } else {
+        const { data } = await q.in("product_id", pids);
+        rows = ((data ?? []) as { kind: string; quantity: number; reason: string; created_at: string }[]).map((r) => ({
+          tipo: r.kind,
+          quantidade: r.quantity,
+          motivo: r.reason,
+          em: r.created_at,
+        }));
+      }
+    } else {
+      rows = (((await q).data ?? []) as { kind: string; quantity: number; reason: string; created_at: string }[]).map((r) => ({
+        tipo: r.kind,
+        quantidade: r.quantity,
+        motivo: r.reason,
+        em: r.created_at,
+      }));
+    }
   }
   return rows;
 }
@@ -121,13 +171,13 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const parsed = querySchema.safeParse(Object.fromEntries(url.searchParams));
     if (!parsed.success) return fail("VALIDATION", "Filtros invalidos.", 422);
-    const { entity, periodo, status, format } = parsed.data;
+    const { entity, periodo, status, categoria, produto, fornecedor, format } = parsed.data;
     const [module, action] = PERM[entity] as [string, string];
     if (!canSession(session, module as "tickets", action as "read")) {
       return fail("FORBIDDEN", "Sem permissao.", 403);
     }
     const admin = createAdminClient();
-    const rows = await buildReportRows(admin, session.orgId, entity, periodo, status);
+    const rows = await buildReportRows(admin, session.orgId, entity, periodo, status, { status, categoria, produto, fornecedor });
     if (format === "csv") {
       return new Response(toCsv(rows), {
         status: 200,

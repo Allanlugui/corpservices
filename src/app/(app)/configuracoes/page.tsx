@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/toast";
 import { AuditoriaViewer } from "@/components/AuditoriaViewer";
 import { LogsViewer } from "@/components/LogsViewer";
 import { Locais } from "@/components/Locais";
+import { Switch } from "@/components/ui/extra";
 import RelatoriosPage from "../relatorios/page";
 
 interface Health {
@@ -137,7 +138,10 @@ function Parametros() {
       });
       const json = await res.json();
       if (!res.ok || json.error) toast(json.error?.message ?? "Não foi possível salvar.", "error");
-      else toast("Parâmetro salvo (com auditoria).");
+      else {
+        toast("Parâmetro salvo (com auditoria).");
+        setSettings((prev) => prev.map((s) => (s.key === key ? { ...s, value } : s)));
+      }
     } catch {
       toast("Falha de rede.", "error");
     } finally {
@@ -151,26 +155,33 @@ function Parametros() {
       {settings.map((s) => (
         <Card key={s.key} title={s.label}>
           <p className="text-xs text-slate-500">Usado em: {s.consumer} · padrão {s.default} · faixa {s.min}–{s.max}</p>
-          <div className="mt-2 flex items-end gap-2">
-            <div className="w-32">
-              <Input label="Valor" type="number" min={s.min} max={s.max} defaultValue={s.value} id={`param-${s.key}`} />
+          {s.key === "email_enabled" ? (
+            <div className="mt-2 flex items-center gap-3">
+              <Switch checked={s.value === 1} disabled={busy} label="Envio de e-mail" onChange={(v) => void save(s.key, v ? 1 : 0)} />
+              <span className="text-sm font-semibold">{s.value === 1 ? "Ligado" : "Desligado"}</span>
             </div>
-            <Button
-              variant="secondary"
-              disabled={busy}
-              onClick={() => {
-                const el = document.getElementById(`param-${s.key}`) as HTMLInputElement | null;
-                const v = Number(el?.value);
-                if (!Number.isFinite(v)) {
-                  toast("Valor inválido.", "error");
-                  return;
-                }
-                void save(s.key, v);
-              }}
-            >
-              Salvar
-            </Button>
-          </div>
+          ) : (
+            <div className="mt-2 flex items-end gap-2">
+              <div className="w-32">
+                <Input label="Valor" type="number" min={s.min} max={s.max} defaultValue={s.value} id={`param-${s.key}`} />
+              </div>
+              <Button
+                variant="secondary"
+                disabled={busy}
+                onClick={() => {
+                  const el = document.getElementById(`param-${s.key}`) as HTMLInputElement | null;
+                  const v = Number(el?.value);
+                  if (!Number.isFinite(v)) {
+                    toast("Valor inválido.", "error");
+                    return;
+                  }
+                  void save(s.key, v);
+                }}
+              >
+                Salvar
+              </Button>
+            </div>
+          )}
         </Card>
       ))}
       {settings.length === 0 ? <LoadingState label="Carregando parâmetros…" /> : null}
