@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectConfirm, detectKind, detectLevel, isValidEmail } from "./bot-flow";
+import { detectConfirm, detectKind, detectLevel, isValidEmail, matchLocation } from "./bot-flow";
 
 describe("bot-flow (B5)", () => {
   it("detecta compra e serviço em texto livre", () => {
@@ -24,5 +24,31 @@ describe("bot-flow (B5)", () => {
   it("e-mail", () => {
     expect(isValidEmail("a@b.com")).toBe(true);
     expect(isValidEmail("sem-arroba")).toBe(false);
+  });
+});
+
+const ESTRUTURA = [
+  { id: "r", path: "Unidade Pinheiros" },
+  { id: "a1", path: "Unidade Pinheiros › 1° andar" },
+  { id: "a2", path: "Unidade Pinheiros › 2° andar" },
+  { id: "la", path: "Unidade Pinheiros › 2° andar › Lado A" },
+  { id: "ba", path: "Unidade Pinheiros › 1° andar › Bloco A" },
+  { id: "bb", path: "Unidade Pinheiros › 1° andar › Bloco B" },
+];
+
+describe("matchLocation", () => {
+  it("entende ordinal + bloco", () => {
+    const m = matchLocation("Segundo andar lado A", ESTRUTURA);
+    expect(m[0]?.id).toBe("la");
+  });
+
+  it("número direto casa", () => {
+    const m = matchLocation("bloco B, primeiro andar", ESTRUTURA);
+    expect(m[0]?.id).toBe("bb");
+  });
+
+  it("não chuta sem evidência", () => {
+    expect(matchLocation("olá", ESTRUTURA).length).toBe(0);
+    expect(matchLocation("banheiro", ESTRUTURA).length).toBe(0);
   });
 });

@@ -56,6 +56,7 @@ export async function chatTurn(
       "Extraia o MÁXIMO de campos da última mensagem. Pergunte UMA coisa por vez (a mais importante).",
       `Slots: kind (servico|compra). Dados: nome, email. Local: locationId (use a lista) ou locationDetail (texto). Depois: ${slots(collected.kind)}.`,
       `Estado atual: ${JSON.stringify(collected).slice(0, 1200)}`,
+      "Local: case por aproximação — ex: 'segundo andar lado A' casa com 'Unidade Pinheiros › 2° andar › Lado A' (converta ordinais: segundo=2). Sem correspondência, guarde o texto em locationDetail.",
       "Quando TODOS os obrigatórios estiverem preenchidos (nome, email válido, campos do tipo), ready=true e reply=resumo + pergunta de confirmação.",
       "Responda SOMENTE JSON: {\"reply\":\"...\",\"options\":[\"...\"],\"set\":{\"kind\":\"...\",\"name\":\"...\",\"email\":\"...\",\"locationId\":\"...\",\"locationDetail\":\"...\",\"fields\":{}},\"ready\":false}.",
       "options: até 4 respostas rápidas quando fizer sentido (tipo, prioridade, sim/não). Omita quando não.",

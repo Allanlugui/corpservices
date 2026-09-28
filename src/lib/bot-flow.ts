@@ -73,3 +73,51 @@ export function detectConfirm(text: string): boolean | null {
 export function isValidEmail(text: string): boolean {
   return /.+@.+\..+/.test(text.trim());
 }
+
+const ORDINAIS: Record<string, string> = {
+  primeiro: "1", primeira: "1", segundo: "2", segunda: "2", terceiro: "3", terceira: "3",
+  quarto: "4", quarta: "4", quinto: "5", quinta: "5", sexto: "6", sexta: "6",
+  setimo: "7", setima: "7", oitavo: "8", oitava: "8", nono: "9", nona: "9",
+  decimo: "10", decima: "10", terreo: "0",
+};
+
+function normLoc(s: string): string[] {
+  return norm(s)
+    .replace(/[ºª°]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length > 0)
+    .map((t) => ORDINAIS[t] ?? t);
+}
+
+export interface LocMatch {
+  id: string;
+  path: string;
+  score: number;
+}
+
+/**
+ * Casa texto livre ("segundo andar lado A") contra a estrutura completa.
+ * Números/ordinais valem mais; exige nº ou ≥2 tokens para não chutar.
+ */
+export function matchLocation(text: string, locations: { id: string; path: string }[]): LocMatch[] {
+  const input = normLoc(text);
+  if (input.length === 0) return [];
+  const isNum = (t: string) => /^\d+$/.test(t);
+  const scored: LocMatch[] = locations.map((l) => {
+    const pt = normLoc(l.path);
+    const set = new Set(pt);
+    let score = 0;
+    for (const t of input) {
+      if (set.has(t)) score += isNum(t) ? 3 : 1;
+    }
+    // Bônus: todos os números do input presentes no caminho.
+    const nums = input.filter(isNum);
+    if (nums.length > 0 && nums.every((n) => set.has(n))) score += 2;
+    return { id: l.id, path: l.path, score };
+  });
+  const hasNum = input.some(isNum);
+  return scored
+    .filter((s) => (hasNum ? s.score >= 4 : s.score >= 2))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+}

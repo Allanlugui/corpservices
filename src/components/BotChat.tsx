@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BOT_COMMON, BOT_COMPRA, BOT_SERVICO, isValidEmail, type BotField, type BotKind } from "@/lib/bot-flow";
+import { BOT_COMMON, BOT_COMPRA, BOT_SERVICO, isValidEmail, matchLocation, type BotField, type BotKind } from "@/lib/bot-flow";
 
 interface Msg {
   from: "bot" | "user";
@@ -79,9 +79,10 @@ export function BotChat({ locations, onDone }: { locations: { id: string; path: 
     if (step.key === "__confirm") return { text: "Confere tudo? Posso enviar?", options: ["Sim, enviar", "Não, voltar ao formulário"] };
     const f = step as BotField;
     if (f.key === "__local") {
+      const roots = locations.filter((l) => !l.path.includes("›")).slice(0, 6).map((l) => l.path);
       return {
-        text: f.label,
-        options: ["Pular", ...locations.slice(0, 6).map((l) => l.path)],
+        text: locations.length > 0 ? "Onde você está? Pode dizer com suas palavras (ex: segundo andar lado A) ou escolher." : f.label,
+        options: ["Pular", ...roots],
       };
     }
     return { text: f.label, options: f.type === "select" ? f.options : undefined };
@@ -243,9 +244,21 @@ export function BotChat({ locations, onDone }: { locations: { id: string; path: 
         col.email = text.trim();
       } else if (f.key === "__local") {
         if (!/^pular$/i.test(text)) {
-          const hit = locations.find((l) => l.path.toLowerCase() === text.toLowerCase() || l.path.toLowerCase().includes(text.toLowerCase()));
-          if (hit) col.locationId = hit.id;
-          else col.locationDetail = text;
+          const exact = locations.find((l) => l.path.toLowerCase() === text.toLowerCase());
+          if (exact) {
+            col.locationId = exact.id;
+          } else {
+            const matches = matchLocation(text, locations);
+            if (matches.length === 1) {
+              col.locationId = matches[0].id;
+              push({ from: "bot", text: `Entendi: ${matches[0].path}.` });
+            } else if (matches.length > 1) {
+              push({ from: "bot", text: "Encontrei estes — qual deles?", options: matches.map((m) => m.path) });
+              return;
+            } else {
+              col.locationDetail = text;
+            }
+          }
         }
       } else if (f.type === "select" && f.options) {
         const direct = f.options.find((o) => o.toLowerCase() === text.toLowerCase());
