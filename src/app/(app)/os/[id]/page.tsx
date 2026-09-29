@@ -87,6 +87,38 @@ const ACTIONS: Record<string, { label: string; action: string; extra?: Record<st
   ENCERRADA: [],
 };
 
+function AssignTech({ busy, onAssign }: { busy: boolean; onAssign: (userId: string, label: string) => void }) {
+  const [members, setMembers] = useState<{ id: string; display_name: string | null; role_key: string; email?: string }[]>([]);
+  const [value, setValue] = useState("");
+
+  useEffect(() => {
+    fetch("/api/team")
+      .then(async (res) => {
+        const json = await res.json();
+        if (res.ok && !json.error) setMembers((json.data.members as { id: string; display_name: string | null; role_key: string; email?: string }[]).filter((m) => m.role_key === "tecnico"));
+      })
+      .catch(() => {});
+  }, []);
+
+  if (members.length === 0) return null;
+  return (
+    <div className="grid gap-2 border-t border-slate-100 pt-2">
+      <label className="block text-sm font-medium">
+        Designar técnico
+        <select value={value} onChange={(e) => setValue(e.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+          <option value="">Selecione o técnico…</option>
+          {members.map((m) => (
+            <option key={m.id} value={m.id}>{m.display_name ?? "?"} ({m.role_key}){m.email ? ` — ${m.email}` : ""}</option>
+          ))}
+        </select>
+      </label>
+      <Button variant="secondary" disabled={busy || !value} onClick={() => onAssign(value, `Designar OS ao técnico`)}>
+        Designar técnico
+      </Button>
+    </div>
+  );
+}
+
 function NewPurchaseFromOs({
   workOrderId,
   pauseReason,
@@ -369,6 +401,12 @@ function DetailInner({ id }: { id: string }) {
                         {a.label}
                       </Button>
                     ))}
+                    {(wo.status === "ABERTA" || wo.status === "ATRIBUIDA") ? (
+                      <AssignTech
+                        busy={busy}
+                        onAssign={(userId, label) => setConfirm({ label, body: { action: "assign", assigned_to: userId } })}
+                      />
+                    ) : null}
                     {wo.status === "EM_EXECUCAO" && (
                       <Select label="Motivo da pausa" value={pauseReason} onChange={(e) => setPauseReason(e.target.value)}>
                         {(reasons.length > 0 ? reasons : ["aguardando autorizacao", "falta de componente", "outros"]).map((r) => (
