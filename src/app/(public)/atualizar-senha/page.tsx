@@ -45,7 +45,6 @@ function UpdateForm() {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function onSubmit(event: FormEvent) {
