@@ -48,7 +48,14 @@ export async function GET(request: Request) {
     }
     const { data, error, count } = await query;
     if (error) return fail("DB_QUERY", "Nao foi possivel listar.", 500);
-    return ok({ work_orders: data, page, page_size: pageSize, total: count ?? data.length });
+    // Nome do responsável (desambigua homônimos na lista).
+    const { resolveActors } = await import("@/lib/actors");
+    const actors = await resolveActors((data ?? []).map((w) => (w as { assigned_to: string | null }).assigned_to).filter((a): a is string => !!a));
+    const rows = (data ?? []).map((w) => ({
+      ...(w as Record<string, unknown>),
+      assignee_name: actors.get(((w as { assigned_to: string | null }).assigned_to) ?? "")?.name ?? null,
+    }));
+    return ok({ work_orders: rows, page, page_size: pageSize, total: count ?? data.length });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);

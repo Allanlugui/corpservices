@@ -41,17 +41,47 @@ export async function GET(request: Request) {
     const ownerId = url.searchParams.get("owner_id") ?? "";
     const folderOnly = url.searchParams.get("folder") ?? "";
     const admin = createAdminClient();
+    // Técnico: só arquivos próprios ou de OS/chamados designados a ele.
+    let techScope: { workOrderIds: Set<string>; ticketIds: Set<string> } | null = null;
+    if (session.role === "tecnico") {
+      const [{ data: wos }, { data: tks }] = await Promise.all([
+        admin.from("work_orders").select("id").eq("org_id", session.orgId).eq("assigned_to", session.userId).limit(1000),
+        admin.from("tickets").select("id").eq("org_id", session.orgId).eq("assigned_to", session.userId).limit(1000),
+      ]);
+      techScope = {
+        workOrderIds: new Set((wos ?? []).map((w) => (w as { id: string }).id)),
+        ticketIds: new Set((tks ?? []).map((t) => (t as { id: string }).id)),
+      };
+    }
+    const visible = async (list: Record<string, unknown>[]): Promise<Record<string, unknown>[]> => {
+      if (!techScope) return list;
+      const woIds = [...techScope.workOrderIds];
+      let checklistOfMine: Set<string> = new Set();
+      if (woIds.length > 0) {
+        const { data: items } = await admin.from("work_order_checklists").select("id").in("work_order_id", woIds.slice(0, 500));
+        checklistOfMine = new Set(((items ?? []) as { id: string }[]).map((i) => i.id));
+      }
+      return list.filter((f) => {
+        if ((f.uploaded_by as string) === session.userId) return true;
+        if (f.owner_type === "work_order" && techScope!.workOrderIds.has(f.owner_id as string)) return true;
+        if (f.owner_type === "ticket" && techScope!.ticketIds.has(f.owner_id as string)) return true;
+        if (f.owner_type === "checklist_item" && checklistOfMine.has(f.owner_id as string)) return true;
+        return false;
+      });
+    };
     if (folderOnly && !ownerType) {
       // Visão transversal (ex.: todas as notas fiscais da org).
       const { data: files } = await admin
         .from("files")
-        .select("id, owner_type, owner_id, folder, path, name, mime, size_bytes, created_at")
+        .select("id, owner_type, owner_id, uploaded_by, folder, path, name, mime, size_bytes, created_at")
         .eq("org_id", session.orgId)
         .eq("folder", folderOnly)
         .order("created_at", { ascending: false })
         .limit(100);
+      const scoped = await visible(((files ?? []) as unknown) as Record<string, unknown>[]);
+      const scoped = await visible(((files ?? []) as unknown) as Record<string, unknown>[]);
       const withUrls = await Promise.all(
-        (files ?? []).map(async (f) => {
+        scoped.map(async (f) => {
           const { data } = await admin.storage.from("attachments").createSignedUrl(f.path as string, 3600);
           return { ...f, url: data?.signedUrl ?? null };
         }),
@@ -61,15 +91,25 @@ export async function GET(request: Request) {
     if (!OWNER_TABLE[ownerType] && ownerType !== "checklist_item") {
       return fail("VALIDATION", "owner invalido.", 422);
     }
+    // Técnico abrindo pasta alheia: nega antes de listar.
+    if (techScope && ownerType === "work_order" && !techScope.workOrderIds.has(ownerId)) {
+      const { data: own } = await admin.from("files").select("id").eq("org_id", session.orgId).eq("owner_type", ownerType).eq("owner_id", ownerId).eq("uploaded_by", session.userId).limit(1);
+      if (!own || own.length === 0) return fail("FORBIDDEN", "Arquivos de outra execução.", 403);
+    }
+    if (techScope && ownerType === "ticket" && !techScope.ticketIds.has(ownerId)) {
+      const { data: own } = await admin.from("files").select("id").eq("org_id", session.orgId).eq("owner_type", ownerType).eq("owner_id", ownerId).eq("uploaded_by", session.userId).limit(1);
+      if (!own || own.length === 0) return fail("FORBIDDEN", "Arquivos de outro chamado.", 403);
+    }
     const { data: files } = await admin
       .from("files")
-      .select("id, owner_type, owner_id, folder, path, name, mime, size_bytes, created_at")
+      .select("id, owner_type, owner_id, uploaded_by, folder, path, name, mime, size_bytes, created_at")
       .eq("org_id", session.orgId)
       .eq("owner_type", ownerType)
       .eq("owner_id", ownerId)
       .order("created_at", { ascending: false });
+    const scopedOwner = await visible(((files ?? []) as unknown) as Record<string, unknown>[]);
     const withUrls = await Promise.all(
-      (files ?? []).map(async (f) => {
+      scopedOwner.map(async (f) => {
         const { data } = await admin.storage.from("attachments").createSignedUrl(f.path as string, 3600);
         return { ...f, url: data?.signedUrl ?? null };
       }),

@@ -16,7 +16,14 @@ export async function GET() {
       .eq("org_id", session.orgId)
       .order("display_name");
     if (error) return fail("DB_QUERY", "Nao foi possivel listar.", 500);
-    return ok({ members: data });
+    const { data: users } = await admin.auth.admin.listUsers({ perPage: 100 });
+    const emailById = new Map((users?.users ?? []).map((u) => [u.id, u.email ?? ""]));
+    return ok({
+      members: (data ?? []).map((m) => ({
+        ...(m as Record<string, unknown>),
+        email: emailById.get((m as { id: string }).id) ?? "",
+      })),
+    });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);

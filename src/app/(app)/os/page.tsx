@@ -18,6 +18,7 @@ interface Wo {
   status: string;
   priority: string;
   sla_remaining_ms: number;
+  assignee_name: string | null;
   created_at: string;
 }
 
@@ -100,10 +101,11 @@ export default function OSPage() {
               { key: "status", header: "Status", render: (t) => <StatusBadge status={t.status} /> },
               { key: "priority", header: "Prioridade", hideOnMobile: true, render: (t) => <PriorityBadge priority={t.priority} /> },
               { key: "sla", header: "SLA restante", render: (t) => <span className="whitespace-nowrap font-mono text-sm">{formatRemaining(t.sla_remaining_ms)}</span> },
+              { key: "assignee", header: "Responsável", hideOnMobile: true, render: (t) => <span className="text-sm">{t.assignee_name ?? "—"}</span> },
             ]}
             rows={paged}
             emptyTitle="Nenhuma OS"
-            emptyDescription="OS nascem de chamados convertidos ou criadas pelo gestor."
+            emptyDescription="Técnico vê só as designadas a ele. OS nascem de chamados convertidos ou criadas pelo gestor."
           />
           <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
         </>

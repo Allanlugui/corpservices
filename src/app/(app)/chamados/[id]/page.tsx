@@ -60,7 +60,7 @@ const NEXT: Record<string, { label: string; to: string }[]> = {
 };
 
 function AssignPicker({ onAssign, busy }: { onAssign: (id: string | null) => void; busy: boolean }) {
-  const [members, setMembers] = useState<{ id: string; display_name: string | null; role_key: string }[]>([]);
+  const [members, setMembers] = useState<{ id: string; display_name: string | null; role_key: string; email?: string }[]>([]);
   const [value, setValue] = useState("");
 
   useEffect(() => {
@@ -83,7 +83,7 @@ function AssignPicker({ onAssign, busy }: { onAssign: (id: string | null) => voi
         >
           <option value="">Selecione…</option>
           {members.map((m) => (
-            <option key={m.id} value={m.id}>{m.display_name ?? "?"} ({m.role_key})</option>
+            <option key={m.id} value={m.id}>{m.display_name ?? "?"} ({m.role_key}){m.email ? ` — ${m.email}` : ""}</option>
           ))}
         </select>
       </label>
