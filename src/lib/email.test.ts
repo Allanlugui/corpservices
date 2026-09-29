@@ -1,17 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { buildEmailBody, buildEmailHtml, resolveEmailConfig } from "./email-config";
+import { buildEmailBody, buildEmailHtml, resolveEmailConfig, resolveSmtpConfig } from "./email-config";
 
 describe("email", () => {
-  it("disabled sem RESEND_API_KEY (honesto)", () => {
+  it("disabled sem SMTP (honesto)", () => {
     expect(resolveEmailConfig({}).provider).toBe("disabled");
     expect(resolveEmailConfig({}).enabled).toBe(false);
   });
 
-  it("resend ativo com chave", () => {
-    const cfg = resolveEmailConfig({ RESEND_API_KEY: "re_test", EMAIL_FROM: "a@b.com", APP_URL: "https://x" });
-    expect(cfg.provider).toBe("resend");
+  it("smtp ativo com credenciais", () => {
+    const cfg = resolveEmailConfig({ SMTP_USER: "a@gmail.com", SMTP_PASS: "x", EMAIL_FROM: "a@b.com", APP_URL: "https://x" });
+    expect(cfg.provider).toBe("smtp");
     expect(cfg.enabled).toBe(true);
     expect(cfg.from).toBe("a@b.com");
+  });
+
+  it("smtp config padrão Gmail", () => {
+    expect(resolveSmtpConfig({ SMTP_USER: "a@gmail.com", SMTP_PASS: "x" })).toMatchObject({ host: "smtp.gmail.com", port: 465 });
+    expect(resolveSmtpConfig({})).toBeNull();
   });
 
   it("corpo inclui link absoluto quando ha appUrl", () => {

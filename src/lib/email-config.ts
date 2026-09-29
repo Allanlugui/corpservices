@@ -2,17 +2,40 @@
 
 export interface EmailConfig {
   enabled: boolean;
-  provider: "resend" | "disabled";
+  provider: "smtp" | "disabled";
   from: string;
   appUrl: string;
 }
 
-/** Chave SOMENTE via env; sem chave = disabled (honesto). */
+/** SMTP via env; sem credencial = disabled (honesto). */
 export function resolveEmailConfig(env: Record<string, string | undefined>): EmailConfig {
   const from = env.EMAIL_FROM ?? "CorpServices <nao-responder@localhost>";
   const appUrl = env.APP_URL ?? env.NEXT_PUBLIC_APP_URL ?? "";
-  if (!env.RESEND_API_KEY) return { enabled: false, provider: "disabled", from, appUrl };
-  return { enabled: true, provider: "resend", from, appUrl };
+  if (!env.SMTP_USER || !env.SMTP_PASS) return { enabled: false, provider: "disabled", from, appUrl };
+  return { enabled: true, provider: "smtp", from, appUrl };
+}
+
+export interface SmtpConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+}
+
+/** Gmail padrão (smtp.gmail.com:465); sobrescrevível via SMTP_HOST/PORT/SECURE. */
+export function resolveSmtpConfig(env: Record<string, string | undefined>): SmtpConfig | null {
+  const user = env.SMTP_USER ?? "";
+  const pass = env.SMTP_PASS ?? "";
+  if (!user || !pass) return null;
+  const port = Number(env.SMTP_PORT ?? 465);
+  return {
+    host: env.SMTP_HOST ?? "smtp.gmail.com",
+    port: Number.isFinite(port) ? port : 465,
+    secure: (env.SMTP_SECURE ?? "true") !== "false",
+    user,
+    pass,
+  };
 }
 
 export function buildEmailBody(body: string, link: string, appUrl: string): string {

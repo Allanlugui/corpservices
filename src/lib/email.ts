@@ -1,10 +1,10 @@
 import "server-only";
+import nodemailer from "nodemailer";
 import { createAdminClient } from "./supabase-admin";
-import type { EmailConfig } from "./email-config";
+import type { EmailConfig, SmtpConfig } from "./email-config";
 
-export type { EmailConfig };
-export type { EmailSignature } from "./email-config";
-export { buildEmailBody, buildEmailHtml, resolveEmailConfig } from "./email-config";
+export type { EmailConfig, EmailSignature } from "./email-config";
+export { buildEmailBody, buildEmailHtml, resolveEmailConfig, resolveSmtpConfig } from "./email-config";
 
 export interface EmailInput {
   userId: string;
@@ -40,7 +40,23 @@ export async function enqueueEmail(
   });
 }
 
-/** Envio via Resend HTTP (sem SDK). Retorna erro textual ou null. */
+/** Envio via SMTP (Gmail/app password). Retorna erro textual ou null. */
+export async function sendViaSmtp(cfg: SmtpConfig, from: string, to: string, subject: string, text: string, html?: string): Promise<string | null> {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: cfg.host,
+      port: cfg.port,
+      secure: cfg.secure,
+      auth: { user: cfg.user, pass: cfg.pass },
+    });
+    await transporter.sendMail({ from, to, subject, text, ...(html ? { html } : {}) });
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message.slice(0, 200) : "falha smtp";
+  }
+}
+
+/** Legado Resend (mantido p/ compat; provedor atual é smtp). */
 export async function sendViaResend(apiKey: string, from: string, to: string, subject: string, text: string, html?: string): Promise<string | null> {
   try {
     const res = await fetch("https://api.resend.com/emails", {

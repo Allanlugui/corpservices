@@ -8,7 +8,7 @@ describe("getIntegrations", () => {
     expect(byName.get("Supabase (banco + auth)")).toBe("NAO_CONFIGURADO");
     expect(byName.get("ERP")).toBe("PENDENTE_DE_INTEGRACAO");
     expect(byName.get("Provedor IA (LLM)")).toBe("PENDENTE_DE_INTEGRACAO");
-    expect(byName.get("E-mail (Resend)")).toBe("NAO_CONFIGURADO");
+    expect(byName.get("E-mail (SMTP)")).toBe("NAO_CONFIGURADO");
     expect(byName.get("Push (VAPID)")).toBe("PENDENTE_DE_INTEGRACAO");
     expect(byName.get("WhatsApp")).toBe("PENDENTE_DE_INTEGRACAO");
   });
@@ -18,8 +18,8 @@ describe("getIntegrations", () => {
     expect(items.find((i) => i.name === "WhatsApp")?.status).toBe("CONFIGURADO");
   });
 
-  it("reconhece resend com chave presente", () => {
-    const items = getIntegrations({ RESEND_API_KEY: "re_x" });
+  it("reconhece smtp com credenciais", () => {
+    const items = getIntegrations({ SMTP_USER: "a@gmail.com", SMTP_PASS: "x" });
     expect(items.find((i) => i.name.startsWith("E-mail"))?.status).toBe("CONFIGURADO");
   });
 

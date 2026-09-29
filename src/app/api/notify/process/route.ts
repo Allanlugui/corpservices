@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
-import { buildEmailBody, buildEmailHtml, resolveEmailConfig, sendViaResend } from "@/lib/email";
+import { buildEmailBody, buildEmailHtml, resolveEmailConfig, resolveSmtpConfig, sendViaSmtp } from "@/lib/email";
 import { getSetting } from "../../configuracoes/route";
 
 const BATCH = 20;
@@ -41,11 +41,12 @@ export async function POST(request: Request) {
     const parsed = z.object({ test_email: z.string().email().max(160).optional() }).safeParse(await request.json().catch(() => ({})));
     const admin = createAdminClient();
     const cfg = resolveEmailConfig(process.env);
-    if (!cfg.enabled) return fail("EMAIL_DISABLED", "Provedor de e-mail nao configurado (RESEND_API_KEY).", 422);
+    const smtp = resolveSmtpConfig(process.env);
+    if (!cfg.enabled || !smtp) return fail("EMAIL_DISABLED", "SMTP nao configurado (SMTP_USER + SMTP_PASS).", 422);
 
     // Teste: envia direto sem fila.
     if (parsed.success && parsed.data.test_email) {
-      const err = await sendViaResend(process.env.RESEND_API_KEY as string, cfg.from, parsed.data.test_email, "CorpServices — e-mail de teste", "Provedor configurado e operacional.");
+      const err = await sendViaSmtp(smtp, cfg.from, parsed.data.test_email, "CorpServices — e-mail de teste", "Provedor configurado e operacional.");
       if (err) return fail("EMAIL_SEND", err, 502);
       return ok({ sent: 1, test: true });
     }
@@ -72,14 +73,7 @@ export async function POST(request: Request) {
       }
       const text = buildEmailBody(row.body_text, row.link ?? "", cfg.appUrl);
       const html = buildEmailHtml(row.body_text, row.link ?? "", cfg.appUrl, sig);
-      const err = await sendViaResend(
-        process.env.RESEND_API_KEY as string,
-        cfg.from,
-        row.to_email,
-        row.subject,
-        text,
-        html,
-      );
+      const err = await sendViaSmtp(smtp, cfg.from, row.to_email, row.subject, text, html);
       if (err) {
         failed.push(row.id);
         await admin.from("email_queue").update({ status: row.attempts + 1 >= MAX_ATTEMPTS ? "FAILED" : "PENDING", attempts: row.attempts + 1, last_error: err }).eq("id", row.id);

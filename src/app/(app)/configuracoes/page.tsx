@@ -251,8 +251,8 @@ function Email() {
         <p className="text-sm"><Badge tone={queue.configured ? "ok" : "blocked"}>{queue.configured ? `RESEND ATIVO` : "NÃO CONFIGURADO"}</Badge></p>
         <p className="mt-2 text-sm text-slate-600">
           {queue.configured
-            ? "Chave RESEND_API_KEY presente no servidor. Fila processada pelo botão abaixo ou agendador externo."
-            : "Defina RESEND_API_KEY no ambiente (Vercel) e EMAIL_FROM. Sem chave, a fila acumula e nada é enviado."}
+            ? "SMTP presente no servidor. Fila processada pelo botão abaixo ou agendador externo."
+            : "Defina SMTP_USER + SMTP_PASS no ambiente (Vercel) e EMAIL_FROM. Sem isso, a fila acumula e nada é enviado."}
         </p>
       </Card>
       <Card title="Fila">

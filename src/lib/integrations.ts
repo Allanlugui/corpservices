@@ -42,11 +42,11 @@ export function getIntegrations(
         : "BotIA opera em modo deterministico ate um provedor ser configurado.",
     },
     {
-      name: "E-mail (Resend)",
-      status: has(env["RESEND_API_KEY"]) ? "CONFIGURADO" : "NAO_CONFIGURADO",
-      detail: has(env["RESEND_API_KEY"])
-        ? "Chave presente; validade real só no envio (aba E-mail → teste)."
-        : "Defina RESEND_API_KEY. Sem isso, a fila acumula e nada é enviado.",
+      name: "E-mail (SMTP)",
+      status: has(env["SMTP_USER"]) && has(env["SMTP_PASS"]) ? "CONFIGURADO" : "NAO_CONFIGURADO",
+      detail: has(env["SMTP_USER"]) && has(env["SMTP_PASS"])
+        ? "SMTP configurado; validade real só no envio (aba E-mail → teste)."
+        : "Defina SMTP_USER + SMTP_PASS. Sem isso, a fila acumula e nada é enviado.",
     },
     {
       name: "Push (VAPID)",
