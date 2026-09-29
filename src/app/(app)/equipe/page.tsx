@@ -89,7 +89,7 @@ export default function EquipePage() {
       const json = await res.json();
       if (!res.ok || json.error) toast(json.error?.message ?? "Falha.", "error");
       else {
-        toast("Convite criado — senha provisória enviada por e-mail.");
+        toast("Convite criado — ative o e-mail em Parâmetros e processe a fila em Configurações → E-mail.");
         setInvite({ email: "", display_name: "", role_key: "tecnico", department: "", position: "", phone: "" });
         void load();
       }

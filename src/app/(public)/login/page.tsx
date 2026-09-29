@@ -2,6 +2,7 @@
 
 import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase-browser";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -63,6 +64,9 @@ function LoginForm() {
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Entrando…" : "Entrar"}
         </Button>
+        <p className="text-center text-sm">
+          <Link href="/recuperar-senha" className="font-semibold text-brand-700 hover:underline">Esqueci a senha</Link>
+        </p>
       </form>
     </Card>
   );
