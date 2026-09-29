@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMovement, expiryAlert, incompleteFields, stockAlert } from "./inventory";
+import { applyMovement, applyReturn, applyWithdrawal, availableQty, expiryAlert, incompleteFields, planReserve, stockAlert } from "./inventory";
 
 describe("inventory", () => {
   it("entrada soma, saida subtrai, ajuste define", () => {
@@ -32,5 +32,28 @@ describe("inventory", () => {
   it("entrada tolerante lista pendencias", () => {
     expect(incompleteFields({ name: "x" })).toEqual(["unidade", "categoria", "custo"]);
     expect(incompleteFields({ name: "x", unit: "un", category: "c", cost: 10 })).toEqual([]);
+  });
+});
+
+describe("reserva F31 (empenho)", () => {
+  it("disponível desconta empenhado", () => {
+    expect(availableQty(10, 4)).toBe(6);
+    expect(availableQty(2, 5)).toBe(0);
+  });
+
+  it("reserva até o disponível; resto é falta (auto-SC)", () => {
+    expect(planReserve(10, 4, 5)).toEqual({ reserved: 5, missing: 0 });
+    expect(planReserve(10, 8, 5)).toEqual({ reserved: 2, missing: 3 });
+    expect(planReserve(0, 0, 5)).toEqual({ reserved: 0, missing: 5 });
+  });
+
+  it("retirada baixa físico e empenho", () => {
+    expect(applyWithdrawal(10, 4, 3)).toEqual({ quantity: 7, reserved: 1 });
+    expect(() => applyWithdrawal(10, 2, 3)).toThrow();
+  });
+
+  it("devolução volta físico e libera empenho", () => {
+    expect(applyReturn(7, 1, 1)).toEqual({ quantity: 8, reserved: 0 });
+    expect(() => applyReturn(7, 1, 2)).toThrow();
   });
 });

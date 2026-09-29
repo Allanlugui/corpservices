@@ -19,6 +19,7 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("validate"), client_key: z.string().uuid().optional() }),
   z.object({ action: z.literal("reopen"), client_key: z.string().uuid().optional() }),
   z.object({ action: z.literal("close"), client_key: z.string().uuid().optional() }),
+  z.object({ action: z.literal("asset"), asset_id: z.string().uuid().nullable() }),
 ]);
 
 const ACTION_TO: Record<string, OsStatus> = {
@@ -89,7 +90,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       }
       if (chain.length > 0) location_path = chain.join(" › ");
     }
-    return ok({ work_order: { ...wo, location_path }, pauses: pauses ?? [], checklist: checklist ?? [], materials: materials ?? [], events: named, children: children ?? [], parent });
+    let asset: { id: string; tag: string; name: string } | null = null;
+    if (wo.asset_id) {
+      const { data: a } = await admin.from("assets").select("id, tag, name").eq("id", wo.asset_id).maybeSingle();
+      asset = (a as { id: string; tag: string; name: string } | null) ?? null;
+    }
+    return ok({ work_order: { ...wo, location_path, asset }, pauses: pauses ?? [], checklist: checklist ?? [], materials: materials ?? [], events: named, children: children ?? [], parent });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);
     return fail("INTERNAL", "Erro interno.", 500);
@@ -139,6 +145,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     // Designar não muda estado: vale em qualquer fase aberta (troca de responsável).
     if (action === "assign" && from === "ENCERRADA") {
       return fail("INVALID_STATE", "OS encerrada não troca de responsável.", 422);
+    }
+    // Ativo vinculado (planejamento): sem mudar estado, com evento.
+    if (action === "asset" && parsed.data.action === "asset") {
+      if (from === "ENCERRADA") return fail("INVALID_STATE", "OS encerrada não troca de ativo.", 422);
+      if (parsed.data.asset_id) {
+        const { data: asset } = await admin.from("assets").select("id").eq("id", parsed.data.asset_id).eq("org_id", session.orgId).maybeSingle();
+        if (!asset) return fail("NOT_FOUND", "Ativo nao encontrado.", 404);
+      }
+      const { error: assetError } = await admin.from("work_orders").update({ asset_id: parsed.data.asset_id }).eq("id", id);
+      if (assetError) return fail("DB_UPDATE", "Nao foi possivel vincular.", 500);
+      await appendWorkOrderEvent(admin, id, {
+        event: "ATIVO_VINCULADO",
+        actorId: session.userId,
+        detail: { asset_id: parsed.data.asset_id },
+      });
+      return ok({ id, from, to: from });
     }
     const assignOnly = action === "assign";
     const to = assignOnly ? from : transitionOs(from, ACTION_TO[action]);

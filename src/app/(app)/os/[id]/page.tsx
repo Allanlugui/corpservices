@@ -3,7 +3,7 @@
 import { Suspense, use, useEffect, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
+import { StatusBadge, PriorityBadge, Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
 import { Timeline } from "@/components/ui/timeline";
@@ -14,6 +14,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { LoadingState } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { FileList, FileUploader, useFiles } from "@/components/files";
+import { AssetPicker } from "@/components/AssetPicker";
 import { useToast } from "@/components/ui/toast";
 import { formatRemaining } from "@/domain/sla";
 import { enqueue, loadQueue, newKey, saveQueue } from "@/lib/outbox";
@@ -29,6 +30,8 @@ interface Wo {
   location_path: string | null;
   location_detail: string | null;
   assigned_to: string | null;
+  asset_id: string | null;
+  asset: { id: string; tag: string; name: string } | null;
   sla_total_ms: number;
   sla_remaining_ms: number;
   started_at: string | null;
@@ -56,6 +59,10 @@ interface Material {
   quantity: number;
   unit: string;
   justification: string;
+  product_id: string | null;
+  qty_reserved: number;
+  qty_used: number;
+  status: string;
 }
 
 interface Detail {
@@ -179,6 +186,58 @@ function NewPurchaseFromOs({
   );
 }
 
+function MaterialRow({ osId, item, busy, onChanged }: { osId: string; item: Material; busy: boolean; onChanged: () => void }) {
+  const toast = useToast();
+  const [working, setWorking] = useState(false);
+
+  async function op(op: "reserve" | "withdraw" | "return") {
+    setWorking(true);
+    try {
+      const res = await fetch(`/api/os/${osId}/materials/${item.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ op }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        toast(json.error?.message ?? "Operação recusada.", "error");
+      } else if (op === "reserve" && (json.data?.missing ?? 0) > 0) {
+        toast(`Reservado parcial — SC automática #${json.data?.purchase_id ? "criada" : "?"}.`, "error");
+        onChanged();
+      } else {
+        toast("OK.");
+        onChanged();
+      }
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <li className="rounded-lg border border-slate-200 p-2">
+      <p className="font-semibold">{item.quantity} {item.unit} × {item.product_name}</p>
+      <p className="text-slate-600">Para quê: {item.justification || "—"}</p>
+      {item.product_id ? (
+        <p className="mt-1 text-xs">
+          <Badge tone={item.status === "RETIRADO" ? "ok" : item.status === "PARCIAL" ? "warn" : "pending"}>{item.status}</Badge>
+          <span className="ml-2 text-slate-500">reservado {item.qty_reserved} · usado {item.qty_used}</span>
+        </p>
+      ) : (
+        <p className="mt-1 text-xs text-slate-500">Item avulso (sem vínculo de estoque).</p>
+      )}
+      {item.product_id && !busy ? (
+        <div className="mt-2 flex flex-wrap gap-1">
+          <Button variant="secondary" size="sm" disabled={working} onClick={() => void op("reserve")}>Reservar</Button>
+          <Button variant="secondary" size="sm" disabled={working || item.qty_reserved <= 0} onClick={() => void op("withdraw")}>Retirar (baixa)</Button>
+          <Button variant="ghost" size="sm" disabled={working || item.qty_used <= 0} onClick={() => void op("return")}>Devolver</Button>
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
 function ChecklistRow({
   item,
   onToggle,
@@ -230,7 +289,8 @@ function DetailInner({ id }: { id: string }) {
   const [isManager, setIsManager] = useState(false);
   const [newItem, setNewItem] = useState("");
   const [newItemPhoto, setNewItemPhoto] = useState(false);
-  const [newMat, setNewMat] = useState({ product_name: "", quantity: "1", unit: "un", justification: "" });
+  const [newMat, setNewMat] = useState({ product_name: "", quantity: "1", unit: "un", justification: "", product_id: "" });
+  const [productOpts, setProductOpts] = useState<{ id: string; name: string; quantity: number; unit: string }[]>([]);
   const [childTitle, setChildTitle] = useState("");
 
   function load() {
@@ -348,12 +408,28 @@ function DetailInner({ id }: { id: string }) {
     const res = await fetch(`/api/os/${id}/items?kind=material`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ product_name: newMat.product_name.trim(), quantity: Number(newMat.quantity) || 1, unit: newMat.unit || "un", justification: newMat.justification.trim() }),
+      body: JSON.stringify({ product_name: newMat.product_name.trim(), quantity: Number(newMat.quantity) || 1, unit: newMat.unit || "un", justification: newMat.justification.trim(), product_id: newMat.product_id || null }),
     });
     if (res.ok) {
-      setNewMat({ product_name: "", quantity: "1", unit: "un", justification: "" });
+      setNewMat({ product_name: "", quantity: "1", unit: "un", justification: "", product_id: "" });
       load();
     } else toast("Não foi possível adicionar.", "error");
+  }
+
+  async function searchProducts(q: string) {
+    if (q.trim().length < 2) {
+      setProductOpts([]);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/estoque?q=${encodeURIComponent(q.trim())}&page_size=8`);
+      const json = await res.json();
+      if (res.ok && !json.error) {
+        setProductOpts((json.data.products ?? []) as { id: string; name: string; quantity: number; unit: string }[]);
+      }
+    } catch {
+      /* busca silenciosa */
+    }
   }
 
   async function createChild() {
@@ -420,6 +496,13 @@ function DetailInner({ id }: { id: string }) {
                         onAssign={(userId, label) => setConfirm({ label, body: { action: "assign", assigned_to: userId } })}
                       />
                     ) : null}
+                    {(wo.status === "ABERTA" || wo.status === "ATRIBUIDA") && isManager ? (
+                      <AssetPicker osId={id} current={wo.asset} onChanged={() => load()} />
+                    ) : wo.asset ? (
+                      <p className="border-t border-slate-100 pt-2 text-sm text-slate-600">
+                        Ativo: <strong>{wo.asset.tag} · {wo.asset.name}</strong>
+                      </p>
+                    ) : null}
                     {wo.status === "EM_EXECUCAO" && (
                       <Select label="Motivo da pausa" value={pauseReason} onChange={(e) => setPauseReason(e.target.value)}>
                         {(reasons.length > 0 ? reasons : ["aguardando autorizacao", "falta de componente", "outros"]).map((r) => (
@@ -463,15 +546,30 @@ function DetailInner({ id }: { id: string }) {
                 <Card title="Materiais">
                   <ul className="grid gap-2 text-sm">
                     {materials.map((m) => (
-                      <li key={m.id} className="rounded-lg border border-slate-200 p-2">
-                        <p className="font-semibold">{m.quantity} {m.unit} × {m.product_name}</p>
-                        <p className="text-slate-600">Para quê: {m.justification || "—"}</p>
-                      </li>
+                      <MaterialRow key={m.id} osId={id} item={m} busy={busy} onChanged={() => load()} />
                     ))}
                     {materials.length === 0 ? <li className="text-slate-500">Nenhum material consumido.</li> : null}
                   </ul>
                   <div className="mt-3 grid gap-2">
-                    <Input label="Material" value={newMat.product_name} onChange={(e) => setNewMat({ ...newMat, product_name: e.target.value })} />
+                    <Input label="Material" value={newMat.product_name} onChange={(e) => { setNewMat({ ...newMat, product_name: e.target.value, product_id: "" }); void searchProducts(e.target.value); }} />
+                    {productOpts.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {productOpts.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setNewMat({ ...newMat, product_name: p.name, unit: p.unit, product_id: p.id });
+                              setProductOpts([]);
+                            }}
+                            className="rounded-full border border-slate-300 bg-white px-2 py-1 text-xs font-semibold hover:bg-slate-100"
+                          >
+                            {p.name} (saldo {p.quantity})
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    {newMat.product_id ? <p className="text-xs font-semibold text-emerald-700">Vinculado ao estoque — poderá reservar.</p> : null}
                     <div className="grid grid-cols-2 gap-2">
                       <Input label="Qtd" value={newMat.quantity} onChange={(e) => setNewMat({ ...newMat, quantity: e.target.value })} />
                       <Input label="Un" value={newMat.unit} onChange={(e) => setNewMat({ ...newMat, unit: e.target.value })} />

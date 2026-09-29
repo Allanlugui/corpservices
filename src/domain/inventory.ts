@@ -44,3 +44,39 @@ export function incompleteFields(input: { name?: string; unit?: string; category
   if (input.cost === undefined || input.cost === null) missing.push("custo");
   return missing;
 }
+
+/** Disponível real = físico menos empenhado (reservas de OS). */
+export function availableQty(quantity: number, reserved: number): number {
+  return Math.max(0, quantity - Math.max(0, reserved));
+}
+
+export interface ReserveResult {
+  reserved: number;
+  missing: number;
+}
+
+/**
+ * Reserva (empenho) F31: reserva até o disponível; o resto vira falta
+ * (dispara solicitação de compra). Nunca negativa, nunca acima do pedido.
+ */
+export function planReserve(quantity: number, reserved: number, wanted: number): ReserveResult {
+  if (wanted <= 0) throw new Error("Quantidade deve ser positiva.");
+  const avail = availableQty(quantity, reserved);
+  const r = Math.min(avail, wanted);
+  return { reserved: r, missing: wanted - r };
+}
+
+/** Baixa real na retirada: físico e empenho caem juntos. */
+export function applyWithdrawal(quantity: number, reserved: number, qty: number): { quantity: number; reserved: number } {
+  if (qty <= 0) throw new Error("Quantidade deve ser positiva.");
+  if (qty > reserved) throw new Error("Retirada acima do reservado.");
+  if (qty > quantity) throw new Error("Saldo insuficiente para a saída.");
+  return { quantity: quantity - qty, reserved: reserved - qty };
+}
+
+/** Devolução formal: físico volta, empenho libera, com estorno de custo. */
+export function applyReturn(quantity: number, reserved: number, qty: number): { quantity: number; reserved: number } {
+  if (qty <= 0) throw new Error("Quantidade deve ser positiva.");
+  if (qty > reserved) throw new Error("Devolução acima do reservado.");
+  return { quantity: quantity + qty, reserved: reserved - qty };
+}

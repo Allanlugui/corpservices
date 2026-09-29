@@ -1,6 +1,7 @@
 import {
   Archive,
   ClipboardList,
+  Cog,
   Home,
   Package,
   ScrollText,
@@ -34,6 +35,7 @@ export const NAV: NavItem[] = [
     ],
   },
   { href: "/os", label: "Ordens de Serviço", icon: Wrench, perm: { module: "work_orders", action: "read" } },
+  { href: "/ativos", label: "Ativos", icon: Cog, perm: { module: "work_orders", action: "read" } },
   {
     href: "/compras",
     label: "Compras",

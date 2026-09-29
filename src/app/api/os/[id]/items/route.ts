@@ -14,6 +14,7 @@ const materialSchema = z.object({
   quantity: z.number().positive().max(1000000),
   unit: z.string().trim().min(1).max(20).default("un"),
   justification: z.string().trim().min(3).max(1000),
+  product_id: z.string().uuid().nullable().optional(),
 });
 
 async function checkAccess(admin: ReturnType<typeof createAdminClient>, orgId: string, woId: string, userId: string, role: string) {
@@ -49,7 +50,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (!parsed.success) return fail("VALIDATION", "Material invalido.", 422);
       const { data, error } = await admin
         .from("work_order_materials")
-        .insert({ work_order_id: id, ...parsed.data, created_by: session.userId })
+        .insert({ work_order_id: id, ...parsed.data, product_id: parsed.data.product_id ?? null, created_by: session.userId })
         .select("id")
         .single();
       if (error) return fail("DB_INSERT", "Nao foi possivel registrar.", 500);
