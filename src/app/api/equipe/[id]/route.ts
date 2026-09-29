@@ -24,6 +24,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const blocked = await guard(session, admin, id);
     if (blocked) return fail("FORBIDDEN", blocked, 403);
     const parsed = z.object({
+      display_name: z.string().trim().min(2).max(120).optional(),
       role_key: z.enum(ROLES).optional(),
       department: z.string().trim().max(120).optional(),
       position: z.string().trim().max(120).optional(),
@@ -35,6 +36,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const d = parsed.data;
     if (d.role_key === "admin" && session.role !== "admin") return fail("FORBIDDEN", "Só admin promove a admin.", 403);
     const patch: Record<string, unknown> = {};
+    if (d.display_name) patch.display_name = d.display_name;
     if (d.role_key) patch.role_key = d.role_key;
     if (d.department !== undefined) patch.department = d.department;
     if (d.position !== undefined) patch.position = d.position;

@@ -34,7 +34,7 @@ export default function EquipePage() {
   const [busy, setBusy] = useState(false);
   const [invite, setInvite] = useState({ email: "", display_name: "", role_key: "tecnico", department: "", position: "", phone: "" });
   const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState({ role_key: "", department: "", position: "", phone: "" });
+  const [form, setForm] = useState({ display_name: "", role_key: "", department: "", position: "", phone: "" });
   const [perms, setPerms] = useState<Record<string, boolean | null>>({});
 
   async function load() {
@@ -72,7 +72,7 @@ export default function EquipePage() {
 
   function openEdit(m: Member) {
     setEditing(m.id);
-    setForm({ role_key: m.role_key, department: m.department ?? "", position: m.position ?? "", phone: m.phone ?? "" });
+    setForm({ display_name: m.display_name ?? "", role_key: m.role_key, department: m.department ?? "", position: m.position ?? "", phone: m.phone ?? "" });
     const p: Record<string, boolean | null> = {};
     for (const o of m.permissions) p[`${o.module}:${o.action}`] = o.allowed;
     setPerms(p);
@@ -223,6 +223,7 @@ export default function EquipePage() {
             </div>
             {editing === m.id ? (
               <div className="mt-3 grid gap-3 border-t border-slate-100 pt-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Input label="Nome" value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
                 <label className="block text-sm font-medium">Papel
                   <select value={form.role_key} onChange={(e) => setForm({ ...form, role_key: e.target.value })} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
                     {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}

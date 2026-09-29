@@ -81,7 +81,7 @@ export function Dropdown({
         {label}
       </button>
       {open ? (
-        <div role="menu" className="absolute right-0 z-40 mt-1 w-56 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+        <div role="menu" className="absolute right-0 z-40 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
           {children(() => setOpen(false))}
         </div>
       ) : null}

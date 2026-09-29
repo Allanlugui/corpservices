@@ -30,6 +30,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main id="conteudo" className="scrollbar-thin flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-5">{children}</div>
         </main>
+        <footer className="border-t border-slate-200 bg-white px-3 py-2 text-center text-xs text-slate-400 sm:px-5">
+          © {new Date().getFullYear()} CorpServices · Todos os direitos reservados
+        </footer>
       </div>
     </div>
   );

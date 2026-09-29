@@ -16,7 +16,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
       <footer className="px-4 py-4 text-center text-xs text-slate-500">
-        CorpServices · canal público de solicitações
+        © {new Date().getFullYear()} CorpServices · Todos os direitos reservados
       </footer>
     </div>
   );

@@ -131,7 +131,7 @@ export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
           }
         >
           {(close) => (
-            <div className="grid w-72 gap-1 p-2 text-sm">
+            <div className="grid gap-1 p-2 text-sm">
               <p className="px-2 py-1 text-xs font-bold uppercase text-slate-500">Recentes</p>
               {notifs.length === 0 ? (
                 <p className="px-2 py-2 text-slate-500">Nada por aqui.</p>
@@ -141,7 +141,8 @@ export function Header({ me, onMenu }: { me: Me | null; onMenu: () => void }) {
                     key={n.id}
                     href={n.link ?? "/notificacoes"}
                     onClick={() => close()}
-                    className={`rounded-lg px-2 py-2 hover:bg-slate-100 ${n.read_at ? "text-slate-600" : "font-semibold"}`}
+                    className={`block truncate rounded-lg px-2 py-2 hover:bg-slate-100 ${n.read_at ? "text-slate-600" : "font-semibold"}`}
+                    title={n.title}
                   >
                     {n.title}
                   </Link>
