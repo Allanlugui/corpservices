@@ -132,7 +132,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         .maybeSingle();
       if (seen) return ok({ id, to: seen.to_status, deduped: true });
     }
-    const to = transitionOs(from, ACTION_TO[action]);
+    // Designar não muda estado: vale em qualquer fase aberta (troca de responsável).
+    if (action === "assign" && from === "ENCERRADA") {
+      return fail("INVALID_STATE", "OS encerrada não troca de responsável.", 422);
+    }
+    const assignOnly = action === "assign";
+    const to = assignOnly ? from : transitionOs(from, ACTION_TO[action]);
     // OS filha aberta bloqueia conclusao/validacao/encerramento da pai.
     if ((action === "complete" || action === "validate" || action === "close")) {
       const { count } = await admin

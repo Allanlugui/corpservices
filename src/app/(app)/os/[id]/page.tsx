@@ -87,7 +87,7 @@ const ACTIONS: Record<string, { label: string; action: string; extra?: Record<st
   ENCERRADA: [],
 };
 
-function AssignTech({ busy, onAssign }: { busy: boolean; onAssign: (userId: string, label: string) => void }) {
+function AssignTech({ busy, current, onAssign }: { busy: boolean; current: string | null; onAssign: (userId: string, label: string) => void }) {
   const [members, setMembers] = useState<{ id: string; display_name: string | null; role_key: string; email?: string }[]>([]);
   const [value, setValue] = useState("");
 
@@ -101,10 +101,11 @@ function AssignTech({ busy, onAssign }: { busy: boolean; onAssign: (userId: stri
   }, []);
 
   if (members.length === 0) return null;
+  const currentName = members.find((m) => m.id === current)?.display_name ?? null;
   return (
     <div className="grid gap-2 border-t border-slate-100 pt-2">
       <label className="block text-sm font-medium">
-        Designar técnico
+        {currentName ? `Responsável atual: ${currentName} — trocar para` : "Designar técnico"}
         <select value={value} onChange={(e) => setValue(e.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
           <option value="">Selecione o técnico…</option>
           {members.map((m) => (
@@ -112,8 +113,8 @@ function AssignTech({ busy, onAssign }: { busy: boolean; onAssign: (userId: stri
           ))}
         </select>
       </label>
-      <Button variant="secondary" disabled={busy || !value} onClick={() => onAssign(value, `Designar OS ao técnico`)}>
-        Designar técnico
+      <Button variant="secondary" disabled={busy || !value} onClick={() => onAssign(value, `Trocar responsável da OS`)}>
+        {currentName ? "Trocar responsável" : "Designar técnico"}
       </Button>
     </div>
   );
@@ -401,9 +402,10 @@ function DetailInner({ id }: { id: string }) {
                         {a.label}
                       </Button>
                     ))}
-                    {(wo.status === "ABERTA" || wo.status === "ATRIBUIDA") ? (
+                    {(wo.status !== "ENCERRADA") ? (
                       <AssignTech
                         busy={busy}
+                        current={wo.assigned_to}
                         onAssign={(userId, label) => setConfirm({ label, body: { action: "assign", assigned_to: userId } })}
                       />
                     ) : null}
