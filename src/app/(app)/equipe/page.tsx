@@ -161,6 +161,20 @@ export default function EquipePage() {
     }
   }
 
+  async function sendReset(m: Member) {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/equipe/${m.id}/reset`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || json.error) toast(json.error?.message ?? "Falha.", "error");
+      else toast("Link de restauração enviado por e-mail (vale 2h).");
+    } catch {
+      toast("Falha de rede.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading) return <LoadingState label="Carregando equipe…" />;
   if (error) return <ErrorState title="Equipe indisponível" description={error} onRetry={() => void load()} />;
 
@@ -202,6 +216,7 @@ export default function EquipePage() {
                 {editing === m.id ? "Fechar" : "Editar"}
               </Button>
               <Button variant="secondary" size="sm" disabled={busy} onClick={() => void forceReset(m)}>Exigir troca de senha</Button>
+              <Button variant="secondary" size="sm" disabled={busy} onClick={() => void sendReset(m)}>Enviar reset por e-mail</Button>
               <Button variant={m.banned ? "secondary" : "danger"} size="sm" disabled={busy} onClick={() => void toggleBan(m)}>
                 {m.banned ? "Reativar" : "Desativar"}
               </Button>
