@@ -4,6 +4,7 @@ import { fail, ok } from "@/lib/api";
 import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { incompleteFields } from "@/domain/inventory";
 import { pageParams } from "@/lib/pagination";
+import { getRoleConfig } from "@/app/api/configuracoes/papeis/route";
 
 const productSchema = z.object({
   name: z.string().trim().min(1).max(160),
@@ -79,6 +80,11 @@ export async function POST(request: Request) {
     const parsed = productSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return fail("VALIDATION", "Campos invalidos.", 422, parsed.error.flatten().fieldErrors);
     const admin = createAdminClient();
+    // Config do perfil estoque: custo pode ser obrigatório (precisão financeira).
+    const roleCfg = await getRoleConfig(admin, session.orgId, "estoque");
+    if (roleCfg.custo_obrigatorio === true && !(parsed.data.cost_cents > 0)) {
+      return fail("VALIDATION", "Informe o custo do produto (obrigatório por configuração).", 422);
+    }
     const catId = await categoryId(admin, session.orgId, parsed.data.category);
     const missing = incompleteFields({ name: parsed.data.name, unit: parsed.data.unit, category: parsed.data.category, cost: parsed.data.cost_cents });
     const { data, error } = await admin

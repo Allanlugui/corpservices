@@ -19,6 +19,7 @@ export async function enqueueEmail(
   admin: ReturnType<typeof createAdminClient>,
   orgId: string,
   input: EmailInput,
+  senderUserId?: string,
 ): Promise<void> {
   let to = "";
   try {
@@ -30,6 +31,7 @@ export async function enqueueEmail(
   await admin.from("email_queue").insert({
     org_id: orgId,
     user_id: input.userId,
+    sender_user_id: senderUserId ?? null,
     to_email: to,
     subject: input.subject,
     body_text: input.body ?? "",

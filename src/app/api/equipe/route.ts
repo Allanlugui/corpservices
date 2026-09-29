@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       subject: "Seu acesso ao CorpServices",
       body: `Olá ${parsed.data.display_name}. Seu acesso: ${parsed.data.email} / senha provisória ${password}. Troque no primeiro acesso.`,
       link: "/login",
-    });
+    }, session.userId);
     return ok({ id: uid }, 201);
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);

@@ -3,6 +3,7 @@ import { fail, ok } from "@/lib/api";
 import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
 import { notifyRoles } from "@/lib/notify";
 import { getSetting } from "@/app/api/configuracoes/route";
+import { getRoleConfig } from "@/app/api/configuracoes/papeis/route";
 
 const COOLDOWN_MS = 24 * 3600 * 1000;
 
@@ -35,7 +36,9 @@ export async function POST(request: Request) {
     }
 
     for (const orgId of orgs) {
-      // SLA: abertas com pouco fôlego ou estouradas.
+      // SLA: abertas com pouco fôlego ou estouradas (% configurável por perfil gestor).
+      const gestorCfg = await getRoleConfig(admin, orgId, "gestor");
+      const warnRatio = Number(gestorCfg.sla_aviso_percent ?? 20) / 100;
       const { data: wos } = await admin
         .from("work_orders")
         .select("id, number, status, sla_remaining_ms, sla_total_ms")
@@ -54,11 +57,11 @@ export async function POST(request: Request) {
             link: `/os/${wo.id}`,
           });
           sent += 1;
-        } else if (ratio < 0.2 && ratio >= 0 && (await fresh(orgId, `sla-proximo-${wo.id}`))) {
+        } else if (ratio < warnRatio && ratio >= 0 && (await fresh(orgId, `sla-proximo-${wo.id}`))) {
           await notifyRoles(admin, orgId, ["gestor", "admin", "tecnico"], {
             kind: "sla_proximo",
             title: `OS-${wo.number} perto do limite do SLA`,
-            body: "Menos de 20% do prazo restante.",
+            body: `Menos de ${Math.round(warnRatio * 100)}% do prazo restante.`,
             link: `/os/${wo.id}`,
           });
           sent += 1;

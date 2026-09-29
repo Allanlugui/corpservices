@@ -173,13 +173,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         title: `Compra #${req.number} ${to === "APROVADA" ? "aprovada" : "rejeitada"}`,
         link: `/compras/${id}`,
       });
-      // E-mail espelha o in-app (fila; envio no worker).
+      // E-mail espelha o in-app (fila; envio no worker; assinatura do gestor que decidiu).
       await enqueueEmail(admin, session.orgId, {
         userId: req.requested_by as string,
         kind: to === "APROVADA" ? "compra_aprovada" : "compra_rejeitada",
         subject: `Compra #${req.number} ${to === "APROVADA" ? "aprovada" : "rejeitada"}`,
         link: `/compras/${id}`,
-      });
+      }, session.userId);
       // Push best-effort (falha silenciosa: in-app + e-mail já cobrem).
       try {
         await sendPushToUser(admin, req.requested_by as string, {

@@ -2,11 +2,12 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { fail, ok } from "@/lib/api";
 import { AuthError, canSession, requireProfile } from "@/lib/require-auth";
+import { getRoleConfig } from "@/app/api/configuracoes/papeis/route";
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 const itemSchema = z.object({
   label: z.string().trim().min(1).max(200),
-  requires_photo: z.boolean().default(false),
+  requires_photo: z.boolean().optional(),
 });
 const materialSchema = z.object({
   product_name: z.string().trim().min(1).max(160),
@@ -49,10 +50,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const parsed = itemSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return fail("VALIDATION", "Item invalido.", 422);
+    // Padrão do perfil técnico quando o criador não escolhe (config por perfil).
+    const roleCfg = await getRoleConfig(admin, session.orgId, "tecnico");
+    const requiresPhoto = parsed.data.requires_photo ?? roleCfg.checklist_foto_default === true;
     const { count } = await admin.from("work_order_checklists").select("id", { count: "exact", head: true }).eq("work_order_id", id);
     const { data, error } = await admin
       .from("work_order_checklists")
-      .insert({ work_order_id: id, label: parsed.data.label, requires_photo: parsed.data.requires_photo, position: count ?? 0 })
+      .insert({ work_order_id: id, label: parsed.data.label, requires_photo: requiresPhoto, position: count ?? 0 })
       .select("id")
       .single();
     if (error) return fail("DB_INSERT", "Nao foi possivel registrar.", 500);

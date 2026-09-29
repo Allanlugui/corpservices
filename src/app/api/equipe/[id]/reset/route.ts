@@ -41,7 +41,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       subject: "Restaure seu acesso ao CorpServices",
       body: `Olá ${(target as { display_name: string }).display_name ?? "usuário"}. Use o link abaixo para criar uma nova senha (vale 2h, uso único).`,
       link: `/atualizar-senha?token=${token}`,
-    });
+    }, session.userId);
     return ok({ ok: true });
   } catch (e) {
     if (e instanceof AuthError) return fail("AUTH", e.message, e.status);

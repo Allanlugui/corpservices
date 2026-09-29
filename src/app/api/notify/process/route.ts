@@ -58,17 +58,17 @@ export async function POST(request: Request) {
     const failed: string[] = [];
     let skippedOrg = 0;
     for (const m of pending ?? []) {
-      const row = m as { id: string; org_id: string; user_id: string | null; to_email: string; subject: string; body_text: string; link: string | null; attempts: number };
+      const row = m as { id: string; org_id: string; user_id: string | null; sender_user_id: string | null; to_email: string; subject: string; body_text: string; link: string | null; attempts: number };
       // Respeita o kill-switch por org (email_enabled).
       const enabled = await getSetting(admin, row.org_id, "email_enabled");
       if (enabled !== 1) {
         skippedOrg += 1;
         continue;
       }
-      // Assinatura do operador que originou o disparo (se houver).
+      // Assinatura de quem DISPAROU (gestor do convite/aprovação/reset).
       let sig: { display_name: string; job_title: string; phone: string; body_text: string; image_url: string | null } | null = null;
-      if (row.user_id) {
-        const { data: s } = await admin.from("email_signatures").select("display_name, job_title, phone, body_text, image_url").eq("org_id", row.org_id).eq("user_id", row.user_id).maybeSingle();
+      if (row.sender_user_id) {
+        const { data: s } = await admin.from("email_signatures").select("display_name, job_title, phone, body_text, image_url").eq("org_id", row.org_id).eq("user_id", row.sender_user_id).maybeSingle();
         sig = (s as typeof sig) ?? null;
       }
       const text = buildEmailBody(row.body_text, row.link ?? "", cfg.appUrl);
