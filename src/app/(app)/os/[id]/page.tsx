@@ -227,6 +227,7 @@ function DetailInner({ id }: { id: string }) {
   const [pauseReason, setPauseReason] = useState("aguardando autorizacao");
   const [reasons, setReasons] = useState<string[]>([]);
   const [confirm, setConfirm] = useState<{ label: string; body: Record<string, unknown> } | null>(null);
+  const [isManager, setIsManager] = useState(false);
   const [newItem, setNewItem] = useState("");
   const [newItemPhoto, setNewItemPhoto] = useState(false);
   const [newMat, setNewMat] = useState({ product_name: "", quantity: "1", unit: "un", justification: "" });
@@ -244,6 +245,14 @@ function DetailInner({ id }: { id: string }) {
 
   useEffect(() => {
     load();
+    fetch("/api/me")
+      .then(async (res) => {
+        if (res.ok) {
+          const role = ((await res.json()).data?.role as string) ?? "";
+          setIsManager(role === "admin" || role === "gestor");
+        }
+      })
+      .catch(() => {});
     fetch("/api/os/pause-reasons")
       .then(async (res) => {
         const json = await res.json();
@@ -397,12 +406,14 @@ function DetailInner({ id }: { id: string }) {
                 </Card>
                 <Card title="Ações">
                   <div className="grid gap-2">
-                    {(ACTIONS[wo.status] ?? []).map((a) => (
+                    {(ACTIONS[wo.status] ?? [])
+                      .filter((a) => isManager || (a.action !== "validate" && a.action !== "close"))
+                      .map((a) => (
                       <Button key={a.action} disabled={busy} onClick={() => void runAction(a.action)}>
                         {a.label}
                       </Button>
                     ))}
-                    {(wo.status !== "ENCERRADA") ? (
+                    {(wo.status !== "ENCERRADA") && isManager ? (
                       <AssignTech
                         busy={busy}
                         current={wo.assigned_to}
@@ -437,13 +448,17 @@ function DetailInner({ id }: { id: string }) {
                     {checklist.map((c) => (
                       <ChecklistRow key={c.id} item={c} onToggle={() => void toggleCheck(c)} />
                     ))}
-                    {checklist.length === 0 ? <p className="text-sm text-slate-500">Nenhum item. Adicione o primeiro passo.</p> : null}
+                    {checklist.length === 0 ? <p className="text-sm text-slate-500">{isManager ? "Nenhum item. Monte o checklist do planejamento." : "Aguardando checklist do gestor."}</p> : null}
                   </div>
+                  {isManager ? (
                   <div className="mt-3 grid gap-2">
                     <Input label="Novo item" value={newItem} onChange={(e) => setNewItem(e.target.value)} />
-                    <Checkbox label="Exigir foto neste item (upload na Fase 08)" checked={newItemPhoto} onChange={(e) => setNewItemPhoto(e.target.checked)} />
+                    <Checkbox label="Exigir foto neste item" checked={newItemPhoto} onChange={(e) => setNewItemPhoto(e.target.checked)} />
                     <Button variant="secondary" onClick={() => void addChecklist()}>Adicionar</Button>
                   </div>
+                  ) : (
+                  <p className="mt-3 text-xs text-slate-500">Checklist montado pelo gestor — você executa marcando os itens.</p>
+                  )}
                 </Card>
                 <Card title="Materiais">
                   <ul className="grid gap-2 text-sm">

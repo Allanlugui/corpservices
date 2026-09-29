@@ -121,6 +121,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const from = wo.status as OsStatus;
     const action = parsed.data.action;
+    // Fluxo oficial: validação e encerramento são atos do gestor (auditoria final).
+    if ((action === "validate" || action === "close") && session.role !== "admin" && session.role !== "gestor") {
+      return fail("FORBIDDEN", "Validação e encerramento são do gestor.", 403);
+    }
     // Replay idempotente: evento já aplicado retorna o estado atual sem duplicar.
     const clientKey = (parsed.data as { client_key?: string }).client_key;
     if (clientKey) {
@@ -245,6 +249,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         if (ids.some((pid) => !covered.has(pid))) {
           return fail("PHOTO_REQUIRED", "Itens do checklist exigem foto antes de concluir.", 422);
         }
+      }
+      // Fluxo oficial §6: encerramento técnico exige FOTOS DO DEPOIS.
+      const { data: depois } = await admin
+        .from("files")
+        .select("id")
+        .eq("org_id", session.orgId)
+        .eq("owner_type", "work_order")
+        .eq("owner_id", id)
+        .eq("folder", "depois")
+        .limit(1);
+      if (!depois || depois.length === 0) {
+        return fail("PHOTO_REQUIRED", "Anexe ao menos uma FOTO DO DEPOIS (pasta Depois) para concluir.", 422);
       }
       patch["finished_at"] = new Date(now).toISOString();
     }

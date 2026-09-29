@@ -36,6 +36,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const wo = await checkAccess(admin, session.orgId, id, session.userId, session.role);
     if (!wo) return fail("NOT_FOUND", "OS nao encontrada.", 404);
 
+    if (kind === "checklist") {
+      // Fluxo oficial: checklist é criado pelo gestor no planejamento;
+      // técnico executa (marca), não cria.
+      if (session.role !== "admin" && session.role !== "gestor") {
+        return fail("FORBIDDEN", "Checklist criado pelo gestor no planejamento.", 403);
+      }
+    }
+
     if (kind === "material") {
       const parsed = materialSchema.safeParse(await request.json().catch(() => null));
       if (!parsed.success) return fail("VALIDATION", "Material invalido.", 422);
