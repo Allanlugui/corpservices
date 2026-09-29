@@ -215,3 +215,8 @@ Feito (validado): Fases 00â€“07, correÃ§Ã£o UX, 2 revisÃµes. Pendente real:
 - Verify estendido: acesso + negÃ³cio (janela 600/tabela); UI com 2 badges.
 - Gates: 91/91 Â· lint 0 Â· build OK Â· deploy READY.
 
+
+## FASE 31 — CMMS Ativos + Reserva (2026-09-27)
+- Ativos: TAG única, árvore, criticidade, local; página + nav; OS vincula no planejamento.
+- Reserva: empenho (reserved_quantity), baixa real na retirada, devolução com estorno, SC automática na falta + aviso comprador.
+- Migration v27 aplicada. Gates: 99/99 · lint 0 · build OK · deploy READY.
