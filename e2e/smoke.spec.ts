@@ -78,6 +78,12 @@ test("relatórios exigem login", async ({ request }) => {
   expect([401, 403, 307]).toContain(res.status());
 });
 
+test("recuperar senha abre sem login", async ({ page }) => {
+  await page.goto("/recuperar-senha");
+  await expect(page.getByRole("heading", { name: /esqueci/i })).toBeVisible();
+  await expect(page.getByLabel(/e-mail/i)).toBeVisible();
+});
+
 test("bot não pula o nome após o tipo (regressão off-by-one)", async ({ page }) => {
   await page.goto("/solicitar");
   await page.getByRole("textbox", { name: /mensagem/i }).fill("compra de material");
