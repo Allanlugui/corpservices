@@ -79,7 +79,6 @@ export async function GET(request: Request) {
         .order("created_at", { ascending: false })
         .limit(100);
       const scoped = await visible(((files ?? []) as unknown) as Record<string, unknown>[]);
-      const scoped = await visible(((files ?? []) as unknown) as Record<string, unknown>[]);
       const withUrls = await Promise.all(
         scoped.map(async (f) => {
           const { data } = await admin.storage.from("attachments").createSignedUrl(f.path as string, 3600);
